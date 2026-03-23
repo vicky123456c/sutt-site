@@ -1137,6 +1137,21 @@ Keep it edgy, professional, and strictly formatted.`;
         .marquee-content-reverse { display: flex; flex-shrink: 0; animation: marquee-reverse 35s linear infinite reverse; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes marquee-reverse { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* Manual Scroll for Marquees on Mobile */
+        @media (max-width: 768px) {
+          .marquee-container { 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch; 
+            scrollbar-width: none; 
+          }
+          .marquee-container::-webkit-scrollbar { display: none; }
+          .marquee-content, .marquee-content-reverse { 
+            animation: none !important; 
+            min-width: max-content; 
+            padding-right: 2rem; 
+          }
+        }
       `}} />
 
       <div className="bg-noise" />
@@ -1578,38 +1593,46 @@ Keep it edgy, professional, and strictly formatted.`;
 
             {/* SECTION 3: IMMERSIVE LIVE PROJECTS */}
             <section id="projects" className="pt-20 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
-              <div className="gsap-reveal mb-12 text-center md:text-left">
-                <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4 flex justify-center md:justify-start items-center gap-2">
-                  <Activity className="w-4 h-4 animate-pulse" /> 01 // LIVE DASHBOARD
-                </h2>
-                <h3 className="text-4xl font-light"><span className="font-bold">Active Deployments</span></h3>
+              <div className="gsap-reveal mb-12 text-center md:text-left flex flex-col md:flex-row justify-between items-center md:items-end gap-6">
+                <div>
+                  <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4 flex justify-center md:justify-start items-center gap-2">
+                    <Activity className="w-4 h-4 animate-pulse" /> 01 // LIVE DASHBOARD
+                  </h2>
+                  <h3 className="text-4xl font-light"><span className="font-bold">Active Deployments</span></h3>
+                </div>
+                <button 
+                   className="btn-glitch flex items-center gap-2 text-xs tracking-widest border-b border-white/20 pb-1 hover:text-[#00ff88] hover:border-[#00ff88] transition-colors"
+                   onMouseEnter={() => playSound('glitch')}
+                >
+                   <span className="glitch-target" data-text="VIEW ALL PROJECTS">VIEW ALL PROJECTS</span> <ArrowRight className="w-3 h-3" />
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {[
                   { 
-                    title: "Campus Nav API", tags: ["Go", "Mapbox", "Redis"], 
-                    desc: "Real-time routing engine handling 5k requests/min for the official university app.",
-                    img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80",
-                    status: "LIVE", statusColor: "bg-[#00ff88]", users: "5,200+", updated: "2 days ago"
+                    title: "STUDYDECK", tags: ["Next.js", "Express", "MongoDB"], 
+                    desc: "The ultimate academic repository for BITSians. Access previous year papers, slides, and comprehensive notes.",
+                    img: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80",
+                    status: "LIVE", statusColor: "bg-[#00ff88]", users: "8,200+", updated: "1 day ago"
                   },
                   { 
-                    title: "SU Voting Platform", tags: ["Next.js", "Web3 Auth"], 
-                    desc: "Cryptographically secure election portal replacing legacy paper systems.",
-                    img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
-                    status: "IN PROGRESS", statusColor: "bg-[#FDB813]", users: "Beta Phase", updated: "5 hrs ago"
+                    title: "SU APP", tags: ["Flutter", "Node.js", "Firebase"], 
+                    desc: "The official Student Union application. Digital ID cards, dynamic cab pooling, and real-time food ordering.",
+                    img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80",
+                    status: "LIVE", statusColor: "bg-[#00ff88]", users: "6,500+", updated: "5 hrs ago"
                   },
                   { 
-                    title: "Event Ticketing Node", tags: ["Node.js", "PostgreSQL"], 
-                    desc: "High-throughput microservice for instantaneous campus concert booking.",
-                    img: "https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?auto=format&fit=crop&w=800&q=80",
-                    status: "LIVE", statusColor: "bg-[#00ff88]", users: "12,000+", updated: "1 week ago"
+                    title: "SPORTS COUNCIL APP", tags: ["React Native", "Go", "PostgreSQL"], 
+                    desc: "Live match tracking, dynamic team standings, and deep inventory management for campus sports.",
+                    img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80",
+                    status: "IN PROGRESS", statusColor: "bg-[#FDB813]", users: "Beta Phase", updated: "2 days ago"
                   },
                   { 
-                    title: "Room Booking UI", tags: ["React", "Tailwind"], 
-                    desc: "Fluid, state-driven interface integrating with the legacy library database.",
-                    img: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80",
-                    status: "DEPRECATED", statusColor: "bg-[#E3242B]", users: "Archived", updated: "1 year ago"
+                    title: "BOSM APP", tags: ["React Native", "Redis", "AWS"], 
+                    desc: "Official app for BITS Open Sports Meet. Live scores, interactive event schedules, and secure ticketing.",
+                    img: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=800&q=80",
+                    status: "LIVE", statusColor: "bg-[#00ff88]", users: "15,000+", updated: "1 week ago"
                   }
                 ].map((proj, i) => {
                   return (
@@ -1633,25 +1656,28 @@ Keep it edgy, professional, and strictly formatted.`;
                       
                       <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent"></div>
                       
-                      <div className="tilt-card-content absolute inset-0 p-8 flex flex-col justify-end transition-all duration-500">
-                        <div className="transform group-hover:-translate-y-[150px] transition-transform duration-500 ease-out">
-                          <h4 className="text-3xl font-bold text-white group-hover:text-[#00ff88] transition-colors">{proj.title}</h4>
-                        </div>
-
-                        <div className="absolute bottom-8 left-8 right-8 opacity-0 translate-y-8 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 ease-out delay-100 flex flex-col gap-4">
-                          <p className="text-sm text-white/80 leading-relaxed max-w-sm">{proj.desc}</p>
-                          <div className="flex gap-2">
-                            {proj.tags.map((tag, j) => (
-                              <span key={j} className="text-[10px] tracking-wider px-2 py-1 bg-[#050505]/80 border border-white/10 rounded">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                      <div className="tilt-card-content absolute inset-0 p-6 md:p-8 flex flex-col transition-all duration-500">
+                        {/* Auto-expanding layout trick to prevent overlap */}
+                        <div className="mt-auto w-full">
+                          <h4 className="text-2xl md:text-3xl font-bold text-white group-hover:text-[#00ff88] transition-colors drop-shadow-md">{proj.title}</h4>
                           
-                          {/* Added Metrics to the Dashboard view */}
-                          <div className="flex items-center gap-6 text-[10px] tracking-widest text-white/50 uppercase mt-2 pt-4 border-t border-white/10">
-                            <span className="flex items-center gap-1.5"><Users className="w-3 h-3 text-[#00ff88]" /> {proj.users}</span>
-                            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-[#00ff88]" /> {proj.updated}</span>
+                          <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-500 ease-out opacity-0 group-hover:opacity-100">
+                            <div className="overflow-hidden">
+                              <div className="flex flex-col gap-4 pt-4">
+                                <p className="text-xs md:text-sm text-white/80 leading-relaxed max-w-sm">{proj.desc}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {proj.tags.map((tag, j) => (
+                                    <span key={j} className="text-[10px] tracking-wider px-2 py-1 bg-[#050505]/80 border border-white/10 rounded">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                                <div className="flex items-center gap-6 text-[10px] tracking-widest text-white/50 uppercase mt-2 pt-4 border-t border-white/10">
+                                  <span className="flex items-center gap-1.5"><Users className="w-3 h-3 text-[#00ff88]" /> {proj.users}</span>
+                                  <span className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-[#00ff88]" /> {proj.updated}</span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
@@ -1674,23 +1700,38 @@ Keep it edgy, professional, and strictly formatted.`;
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 relative z-10">
                 {[
-                  { Icon: Code2, title: "Web Architecture", desc: "Building highly scalable, distributed microservices and robust user portals." },
-                  { Icon: Cpu, title: "Native Mobile", desc: "Developing intuitive, high-performance iOS and Android applications." },
-                  { Icon: Shield, title: "Cybersecurity", desc: "Ensuring strict data integrity, pentesting, and robust security protocols." },
-                  { Icon: Users, title: "UI / UX Design", desc: "Crafting seamless, accessible, and highly engaging user experiences." }
+                  { Icon: Code2, title: "Web Architecture", desc: "Building highly scalable, distributed microservices and robust user portals.", img: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80" },
+                  { Icon: Cpu, title: "Native Mobile", desc: "Developing intuitive, high-performance iOS and Android applications.", img: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=800&q=80" },
+                  { Icon: Shield, title: "Cybersecurity", desc: "Ensuring strict data integrity, pentesting, and robust security protocols.", img: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80" },
+                  { Icon: Users, title: "UI / UX Design", desc: "Crafting seamless, accessible, and highly engaging user experiences.", img: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=800&q=80" }
                 ].map((v, i) => {
                   const Icon = v.Icon;
                   return (
                     <div 
                       key={i} 
-                      className="gsap-reveal bg-[#0a0a0a] border border-white/10 p-8 rounded-3xl transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer flex flex-col h-[420px]"
+                      className="gsap-reveal group relative bg-[#0a0a0a] border border-white/10 rounded-3xl overflow-hidden transition-all duration-500 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer flex flex-col h-auto min-h-[380px] md:min-h-[420px]"
                       onMouseEnter={() => playSound('glitch')}
                     >
-                      <div className="mb-auto">
-                        <Icon className="w-12 h-12 text-[#00ff88] mb-8 opacity-70" strokeWidth={1.5} />
-                        <h4 className="text-2xl font-bold mb-4 leading-tight">{v.title}</h4>
+                      {/* Background Image */}
+                      <div className="absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-110 opacity-50 group-hover:opacity-20" style={{ backgroundImage: `url(${v.img})` }}></div>
+                      {/* Gradient Overlays for readability */}
+                      <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/90 via-[#050505]/40 to-[#050505]"></div>
+
+                      <div className="relative z-10 p-6 md:p-8 flex flex-col h-full flex-1">
+                        <div className="mb-auto transform transition-transform duration-500 group-hover:-translate-y-2">
+                          <Icon className="w-10 h-10 md:w-12 md:h-12 text-[#00ff88] mb-6 drop-shadow-[0_0_15px_rgba(0,255,136,0.4)]" strokeWidth={1.5} />
+                          <h4 className="text-xl md:text-2xl font-bold mb-2 leading-tight text-white drop-shadow-md">{v.title}</h4>
+                        </div>
+                        
+                        {/* Hidden Description safely expands upwards without overlapping title */}
+                        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 mt-4">
+                          <div className="overflow-hidden">
+                            <p className="text-white/90 leading-relaxed text-xs md:text-sm bg-[#050505]/90 p-4 md:p-5 rounded-xl backdrop-blur-md border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+                              {v.desc}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-white/60 leading-relaxed mt-4">{v.desc}</p>
                     </div>
                   );
                 })}
@@ -1837,11 +1878,24 @@ Keep it edgy, professional, and strictly formatted.`;
                             alt="Team member" 
                             className="w-full h-full object-cover mix-blend-luminosity opacity-40 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90"></div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent opacity-90"></div>
                           
-                          <div className="absolute bottom-6 left-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                          <div className="absolute bottom-6 left-6 transform translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
                              <div className="font-bold text-lg mb-1">{member.name}</div>
-                             <div className="text-[10px] tracking-widest text-[#00ff88]">{member.role}</div>
+                             <div className="text-[10px] tracking-widest text-[#00ff88] mb-3">{member.role}</div>
+                             
+                             {/* Social Links Row */}
+                             <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                               <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#00ff88] hover:text-black text-white/70 transition-colors" onClick={(e) => e.stopPropagation()}>
+                                 <Github className="w-4 h-4" />
+                               </a>
+                               <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#E1306C] hover:text-white text-white/70 transition-colors" onClick={(e) => e.stopPropagation()}>
+                                 <Instagram className="w-4 h-4" />
+                               </a>
+                               <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black text-white/70 transition-colors" onClick={(e) => e.stopPropagation()}>
+                                 <Mail className="w-4 h-4" />
+                               </a>
+                             </div>
                           </div>
                        </div>
                      </div>
@@ -1879,7 +1933,7 @@ Keep it edgy, professional, and strictly formatted.`;
             </section>
 
             {/* SECTION 8: WHAT SHOULD WE BUILD NEXT (GEMINI API) */}
-            <section id="ai" className="pt-10 pb-10 relative z-10 px-6 md:px-12 max-w-[1000px] w-full mx-auto">
+            <section id="ai" className="pt-10 pb-10 relative z-10 px-6 md:px-12 w-full lg:w-[85%] xl:w-[75%] max-w-[1600px] mx-auto">
               <div className="w-full">
                 <div className="gsap-reveal bg-[#0a0a0a] border border-white/5 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_rgba(0,255,136,0.03)] relative overflow-hidden">
                   
