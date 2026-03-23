@@ -1938,14 +1938,11 @@ Keep it edgy, professional, and strictly formatted.`;
 
             {/* SECTION 9: TOOLS WE USE & WHO WE WORK WITH (SCROLLING LOGOS) */}
             <section className="pt-10 overflow-hidden relative z-10 w-full pb-20">
-              <div className="relative border-y border-white/10 pt-12 pb-12 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
+              <div className="relative border-y border-white/10 pt-6 pb-6 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
                 
                 {/* --- NEW CORNER LABELS --- */}
-                <div className="absolute top-4 left-6 md:left-12 text-xs tracking-[0.2em] text-[#00ff88]/50 font-bold z-20">
+                <div className="w-full px-6 md:px-12 text-sm md:text-base pb-4 tracking-[0.2em] text-[#00ff88]/60 font-bold z-20 mb-4">
                   Tools We Use
-                </div>
-                <div className="absolute bottom-4 right-6 md:right-12 text-xs tracking-[0.2em] text-[#00ff88]/50 font-bold z-20">
-                  Who We Work With
                 </div>
 
                 <div className="marquee-container opacity-50 mb-10">
@@ -1982,6 +1979,10 @@ Keep it edgy, professional, and strictly formatted.`;
                     <span>Alumni Association</span> <span className="text-[#00ff88]">•</span>
                     <span>Sports Council</span> <span className="text-[#00ff88]">•</span>
                   </div>
+                </div>
+
+                <div className="w-full px-6 md:px-12 text-sm md:text-base pt-4 tracking-[0.2em] text-[#00ff88]/60 font-bold z-20 mt-6 text-right">
+                  Who We Work With
                 </div>
               </div>
             </section>
