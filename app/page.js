@@ -1,5 +1,4 @@
 "use client";
-"use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Terminal, Code2, Cpu, Shield, Users, ChevronDown, 
@@ -8,7 +7,6 @@ import {
 } from 'lucide-react';
 
 // --- CUSTOM SOCIAL ICONS ---
-// (Lucide-react removed brand icons, so we use custom inline SVGs for them)
 const Github = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.5-1.4 6.5-7.1a5.8 5.8 0 0 0-1.6-3.9 5.7 5.7 0 0 0 .16-3.9s-1.3-.4-4 1.4a13.2 13.2 0 0 0-7 0c-2.7-1.8-4-1.4-4-1.4a5.7 5.7 0 0 0 .16 3.9 5.8 5.8 0 0 0-1.6 3.9c0 5.7 3.35 6.75 6.5 7.1a4.8 4.8 0 0 0-1 3.02v4"/><path d="M9 20c-5 1.5-5-2.5-7-3"/></svg>);
 const Linkedin = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>);
 const Twitter = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>);
@@ -72,6 +70,16 @@ export default function App() {
   const [curveData, setCurveData] = useState({ curve: "", combined: "", strokeWidth: 6 });
   const [currentPage, setCurrentPage] = useState('home');
   
+  // Custom Dropdown State
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('Web Architecture (Frontend/Backend)');
+  const availableRoles = [
+    'Web Architecture (Frontend/Backend)', 
+    'Native Mobile (iOS/Android)', 
+    'UI / UX Design', 
+    'Cybersecurity / DevOps'
+  ];
+
   // AI Feature State
   const [campusProblem, setCampusProblem] = useState('');
   const [aiResponse, setAiResponse] = useState('');
@@ -231,13 +239,11 @@ Keep it edgy, professional, and strictly formatted.`;
   const updateCurve = useCallback(() => {
     if (currentPage !== 'home' || !roadmapWrapperRef.current || !qMarkRef.current || !timelineBgRef.current) return;
     
-    // Get absolute screen coordinates for our anchor points
     const wrapperRect = roadmapWrapperRef.current.getBoundingClientRect();
     const qRect = qMarkRef.current.getBoundingClientRect();
     const tBgRect = timelineBgRef.current.getBoundingClientRect();
     const ctaRect = ctaButtonRef.current?.getBoundingClientRect();
 
-    // Map screen coordinates relative to our SVG wrapper
     const startX = qRect.left + (qRect.width / 2) - wrapperRect.left;
     const startY = qRect.bottom - wrapperRect.top;
     const endX = tBgRect.left + (tBgRect.width / 2) - wrapperRect.left;
@@ -246,7 +252,6 @@ Keep it edgy, professional, and strictly formatted.`;
     // Line ends exactly 10px above the CTA button
     const bottomY = ctaRect ? ctaRect.top - wrapperRect.top - 10 : tBgRect.bottom - wrapperRect.top;
 
-    // Create a smooth S-curve connecting the tail of the "?" directly to the top of the timeline
     const cp1X = startX;
     const cp1Y = startY + (endY - startY) / 2;
     const cp2X = endX;
@@ -266,7 +271,7 @@ Keep it edgy, professional, and strictly formatted.`;
     if (loading) return;
     updateCurve();
     window.addEventListener('resize', updateCurve);
-    setTimeout(updateCurve, 500); // Recalculate after fonts render
+    setTimeout(updateCurve, 500); 
     return () => window.removeEventListener('resize', updateCurve);
   }, [updateCurve, loading, currentPage]);
 
@@ -446,27 +451,25 @@ Keep it edgy, professional, and strictly formatted.`;
         );
       });
 
-      // Original Restored "We Don't Just Write Code" Typing Effect - Dull Grey
       if (typeTextRef.current) {
         const chars = typeTextRef.current.querySelectorAll('.char');
         gsap.fromTo(chars, 
-          { color: '#222222', opacity: 0.05 }, // Decreased initial opacity and brightness
+          { color: '#222222', opacity: 0.05 }, 
           {
-            color: '#aaaaaa', // Increased final brightness to be more visible
+            color: '#aaaaaa', 
             opacity: 1,
             stagger: 0.1,
             ease: "none",
             scrollTrigger: {
               trigger: typeTextRef.current,
               start: "top 80%",
-              end: "center 50%", // Now finishes exactly when reaching the middle of the screen
+              end: "center 50%", 
               scrub: 0.5,
             }
           }
         );
       }
 
-      // "WHY SHOULD YOU JOIN US?" Typing Effect
       if (joinUsRef.current) {
         const chars = joinUsRef.current.querySelectorAll('.char');
         gsap.fromTo(chars, 
@@ -485,7 +488,6 @@ Keep it edgy, professional, and strictly formatted.`;
         );
       }
 
-      // Dynamic Timeline Dots Lighting Up
       gsap.utils.toArray('.timeline-dot').forEach((dot) => {
         gsap.fromTo(dot, 
           { backgroundColor: '#050505', borderColor: 'rgba(255,255,255,0.2)', boxShadow: 'none' },
@@ -538,20 +540,18 @@ Keep it edgy, professional, and strictly formatted.`;
     if (loading || !libsLoaded || !window.gsap || !curveData.combined || !combinedPathRef.current || currentPage !== 'home') return;
     const gsap = window.gsap;
     
-    // We measure the total path to perfectly sequence the drawing phase
     const totalLen = combinedPathRef.current.getTotalLength();
 
     gsap.set(combinedPathRef.current, { strokeDasharray: totalLen, strokeDashoffset: totalLen });
     
-    // ONE continuous animation to draw the entire line seamlessly
     const unifiedAnim = gsap.to(combinedPathRef.current, {
       strokeDashoffset: 0,
       ease: "none",
       scrollTrigger: {
         trigger: joinUsRef.current,
-        start: "center center",          // Start tracing when '?' is in the middle
+        start: "center center",          
         endTrigger: ctaButtonRef.current || timelineRef.current,
-        end: ctaButtonRef.current ? "top 60%" : "bottom 80%", // Finishes exactly when the button reaches 60% height
+        end: ctaButtonRef.current ? "top 60%" : "bottom 80%", 
         scrub: true
       }
     });
@@ -562,7 +562,6 @@ Keep it edgy, professional, and strictly formatted.`;
     }
   }, [curveData.combined, libsLoaded, loading, currentPage]);
 
-  // --- 3D TILT HANDLERS ---
   const handleTilt = (e) => {
     const card = e.currentTarget;
     const rect = card.getBoundingClientRect();
@@ -626,35 +625,45 @@ Keep it edgy, professional, and strictly formatted.`;
         ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #00ff88; }
         
-        .btn-glitch { position: relative; transition: all 0.3s ease; cursor: pointer; }
+        .btn-glitch { position: relative; transition: all 0.3s ease; cursor: pointer; overflow: hidden; }
         .glitch-target { position: relative; display: inline-block; }
         .btn-glitch:hover .glitch-target::before, .btn-glitch:hover .glitch-target::after {
           content: attr(data-text); position: absolute; top: 0; opacity: 1; pointer-events: none;
+          background: #050505; /* Masks the original text during glitch */
         }
         .btn-glitch:hover .glitch-target::before {
-          left: -2px; color: #00ff88; text-shadow: 2px 0 #00ff88; z-index: 10;
-          animation: glitch-anim-1 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite alternate-reverse;
+          left: -4px; color: #00ff88; text-shadow: 2px 0 #00ff88; z-index: 10;
+          animation: glitch-anim-1 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite alternate-reverse;
         }
         .btn-glitch:hover .glitch-target::after {
-          left: 2px; color: #ff00ea; text-shadow: -2px 0 #ff00ea; z-index: -1;
+          left: 4px; color: #ff00ea; text-shadow: -2px 0 #ff00ea; z-index: -1;
           animation: glitch-anim-2 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite alternate-reverse;
         }
 
         @keyframes glitch-anim-1 {
-          0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); }
-          20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
-          40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
-          60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
-          80% { clip-path: inset(10% 0 70% 0); transform: translate(-1px, 1px); }
-          100% { clip-path: inset(30% 0 50% 0); transform: translate(1px, -1px); }
+          0% { clip-path: inset(20% 0 80% 0); transform: translate(-4px, 1px); }
+          20% { clip-path: inset(60% 0 10% 0); transform: translate(4px, -2px); }
+          40% { clip-path: inset(40% 0 50% 0); transform: translate(-4px, 2px); }
+          60% { clip-path: inset(80% 0 5% 0); transform: translate(4px, -2px); }
+          80% { clip-path: inset(10% 0 70% 0); transform: translate(-4px, 1px); }
+          100% { clip-path: inset(30% 0 50% 0); transform: translate(4px, -1px); }
         }
         @keyframes glitch-anim-2 {
-          0% { clip-path: inset(10% 0 60% 0); transform: translate(2px, -1px); }
-          20% { clip-path: inset(30% 0 20% 0); transform: translate(-2px, 1px); }
-          40% { clip-path: inset(70% 0 10% 0); transform: translate(2px, -2px); }
-          60% { clip-path: inset(20% 0 50% 0); transform: translate(-2px, 2px); }
-          80% { clip-path: inset(50% 0 30% 0); transform: translate(1px, -1px); }
-          100% { clip-path: inset(5% 0 80% 0); transform: translate(-1px, 1px); }
+          0% { clip-path: inset(10% 0 60% 0); transform: translate(4px, -1px); }
+          20% { clip-path: inset(30% 0 20% 0); transform: translate(-4px, 2px); }
+          40% { clip-path: inset(70% 0 10% 0); transform: translate(4px, -2px); }
+          60% { clip-path: inset(20% 0 50% 0); transform: translate(-4px, 2px); }
+          80% { clip-path: inset(50% 0 30% 0); transform: translate(4px, -1px); }
+          100% { clip-path: inset(5% 0 80% 0); transform: translate(-4px, 1px); }
+        }
+
+        /* Custom Dropdown Animation */
+        @keyframes dropdownSlide {
+          from { opacity: 0; transform: translateY(-10px) scaleY(0.95); }
+          to { opacity: 1; transform: translateY(0) scaleY(1); }
+        }
+        .animate-dropdown {
+          animation: dropdownSlide 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
 
         .tilt-card { transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-style: preserve-3d; }
@@ -760,14 +769,39 @@ Keep it edgy, professional, and strictly formatted.`;
                      </div>
                   </div>
                   
-                  <div>
+                  {/* --- FULLY CUSTOM DROPDOWN TO REPLACE NATIVE <SELECT> --- */}
+                  <div className="relative z-50">
                      <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">PRIMARY_DOMAIN (ROLE)</label>
-                     <select className="w-full bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors appearance-none cursor-pointer">
-                        <option>Web Architecture (Frontend/Backend)</option>
-                        <option>Native Mobile (iOS/Android)</option>
-                        <option>UI / UX Design</option>
-                        <option>Cybersecurity / DevOps</option>
-                     </select>
+                     
+                     <div 
+                       onClick={() => { setIsRoleDropdownOpen(!isRoleDropdownOpen); playSound('glitch'); }}
+                       className={`w-full bg-[#050505] border ${isRoleDropdownOpen ? 'border-[#00ff88]/50' : 'border-white/10'} p-5 rounded-2xl text-white cursor-pointer flex justify-between items-center transition-colors`}
+                     >
+                        <span className={selectedRole ? 'text-white' : 'text-white/50'}>
+                          {selectedRole}
+                        </span>
+                        <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isRoleDropdownOpen ? 'rotate-180 text-[#00ff88]' : 'text-white/50'}`} />
+                     </div>
+
+                     {isRoleDropdownOpen && (
+                       <>
+                         <div 
+                           className="fixed inset-0 z-40" 
+                           onClick={() => setIsRoleDropdownOpen(false)}
+                         ></div>
+                         <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-[#0a0a0a] border border-[#00ff88]/30 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.9)] z-50 origin-top animate-dropdown">
+                            {availableRoles.map((role, idx) => (
+                              <div 
+                                key={idx}
+                                onClick={() => { setSelectedRole(role); setIsRoleDropdownOpen(false); playSound('tone'); }}
+                                className={`p-5 cursor-pointer border-b border-white/5 last:border-none transition-colors duration-200 ${selectedRole === role ? 'bg-[#00ff88]/10 text-[#00ff88] font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
+                              >
+                                {role}
+                              </div>
+                            ))}
+                         </div>
+                       </>
+                     )}
                   </div>
 
                   <div>
@@ -789,8 +823,9 @@ Keep it edgy, professional, and strictly formatted.`;
             {/* SECTION 1: HERO */}
             <section className="h-screen flex flex-col items-center justify-center relative px-6 md:px-12 w-full overflow-hidden">
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10 blur-[3px] select-none pointer-events-none">
-                <span className="text-[25vw] font-black leading-[0.8] tracking-widest whitespace-nowrap text-[#444]">BUILD</span>
-                <span className="text-[25vw] font-black leading-[0.8] tracking-widest whitespace-nowrap text-[#444]">INNOVATE</span>
+                {/* Changed width size to 22vw so INNOVATE forcefully spans more and overflows nicely */}
+                <span className="text-[22vw] font-black leading-[0.8] tracking-widest whitespace-nowrap text-[#444] pl-[0.1em]">BUILD</span>
+                <span className="text-[22vw] font-black leading-[0.8] tracking-widest whitespace-nowrap text-[#444] pl-[0.1em]">INNOVATE</span>
               </div>
               
               <div className="z-10 flex flex-col items-center text-center">
@@ -913,7 +948,6 @@ Keep it edgy, professional, and strictly formatted.`;
                 <h3 className="text-4xl font-light">Where We <span className="font-bold">Operate</span></h3>
               </div>
               
-              {/* Changed to lg:grid-cols-4 for a single row on desktop */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 relative z-10">
                 {[
                   { Icon: Code2, title: "Web Architecture", desc: "Building highly scalable, distributed microservices and robust user portals." },
@@ -925,7 +959,6 @@ Keep it edgy, professional, and strictly formatted.`;
                   return (
                     <div 
                       key={i} 
-                      // Added flex flex-col and h-[420px] to enforce a vertical rectangular shape
                       className="gsap-reveal bg-[#0a0a0a] border border-white/10 p-8 rounded-3xl transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer flex flex-col h-[420px]"
                       onMouseEnter={() => playSound('glitch')}
                     >
@@ -1005,9 +1038,7 @@ Keep it edgy, professional, and strictly formatted.`;
               {/* SECTION 5.1: WHY SHOULD YOU JOIN US - DYNAMIC ROADMAP TIMELINE */}
               <section className="pt-0 pb-10 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
                 <div className="relative max-w-4xl mx-auto pt-20 pb-10">
-                   {/* Reference element replacing the old HTML background line. Used strictly for mapping coordinates safely.
-                       This container explicitly excludes the CTA button below so the line stops right above it.
-                   */}
+                   {/* Reference element replacing the old HTML background line. Used strictly for mapping coordinates safely. */}
                    <div ref={timelineBgRef} className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] opacity-0 pointer-events-none md:-translate-x-1/2"></div>
                    
                    {/* Timeline Nodes */}
@@ -1020,7 +1051,7 @@ Keep it edgy, professional, and strictly formatted.`;
                      { title: "The Alumni Network", text: "Join a tight-knit collective. Our alumni network spans top tech giants, providing unparalleled mentorship, mock interviews, and direct referrals." }
                    ].map((r, i) => (
                      <div key={i} className="relative flex items-center justify-end md:justify-between md:odd:flex-row-reverse group mb-12 roadmap-node">
-                        {/* Dynamic Connector Dot (Sized perfectly over the 6px line) */}
+                        {/* Dynamic Connector Dot */}
                         <div className="timeline-dot absolute left-6 md:left-1/2 w-4 h-4 rounded-full -translate-x-1/2 z-20 transition-colors duration-300"></div>
                         
                         {/* Content Card */}
@@ -1038,7 +1069,7 @@ Keep it edgy, professional, and strictly formatted.`;
                 </div>
               </section>
 
-              {/* SECTION 5.2: RECRUITMENT CTA BUTTON (Outside roadmap node tracking) */}
+              {/* SECTION 5.2: RECRUITMENT CTA BUTTON */}
               <section className="relative z-20 flex justify-center pb-20 px-6 w-full">
                  <button
                    ref={ctaButtonRef}
