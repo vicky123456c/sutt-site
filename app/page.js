@@ -743,8 +743,9 @@ Keep it edgy, professional, and strictly formatted.`;
       mouse.y = e.clientY;
       isMoving = true;
       
-      if (canvas.style.opacity !== '0.4') {
-        canvas.style.opacity = '0.4';
+      // Increased from 0.4 to 0.8 for much more prominent trails
+      if (canvas.style.opacity !== '0.8') {
+        canvas.style.opacity = '0.8';
       }
       
       clearTimeout(moveTimeout);
@@ -1937,8 +1938,16 @@ Keep it edgy, professional, and strictly formatted.`;
 
             {/* SECTION 9: TOOLS WE USE & WHO WE WORK WITH (SCROLLING LOGOS) */}
             <section className="pt-10 overflow-hidden relative z-10 w-full pb-20">
-              <div className="relative border-y border-white/10 py-10 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
+              <div className="relative border-y border-white/10 pt-12 pb-12 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
                 
+                {/* --- NEW CORNER LABELS --- */}
+                <div className="absolute top-4 left-6 md:left-12 text-xs tracking-[0.2em] text-[#00ff88]/50 font-bold z-20">
+                  Tools We Use
+                </div>
+                <div className="absolute bottom-4 right-6 md:right-12 text-xs tracking-[0.2em] text-[#00ff88]/50 font-bold z-20">
+                  Who We Work With
+                </div>
+
                 <div className="marquee-container opacity-50 mb-10">
                   <div className="marquee-content-reverse items-center gap-16 px-8 text-2xl font-bold tracking-widest uppercase">
                     <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> REACT</span>
@@ -2004,7 +2013,7 @@ Keep it edgy, professional, and strictly formatted.`;
            </div>
         </div>
 
-      
+        {/* Copyright Block */}
         <div className="flex flex-col items-center justify-center text-white/30 text-[10px] tracking-widest gap-4 border-t border-white/5 pt-12">
           <SuttLogo className="w-8 h-8 opacity-40 grayscale" hoverable={true} />
           <p>SYSTEMS OPERATIONAL // © {new Date().getFullYear()} SUTT</p>
