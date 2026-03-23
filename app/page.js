@@ -5,23 +5,6 @@ import {
   Volume2, VolumeX, ArrowRight, ExternalLink, Sparkles, Loader2, Zap, Vote, BookOpen, GraduationCap, Lightbulb,
   Mail, MessageSquare, TerminalSquare, Clock, Save, ThumbsUp, Activity, Play, Gamepad2, Trophy, CheckCircle2, XCircle
 } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, onSnapshot } from 'firebase/firestore';
-
-// --- FIREBASE INIT ---
-let app, auth, db, appId;
-try {
-  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-  if (firebaseConfig) {
-     app = initializeApp(firebaseConfig);
-     auth = getAuth(app);
-     db = getFirestore(app);
-     appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-  }
-} catch (e) {
-  console.error("Firebase init error", e);
-}
 
 // --- CUSTOM SOCIAL ICONS ---
 const Github = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.5-1.4 6.5-7.1a5.8 5.8 0 0 0-1.6-3.9 5.7 5.7 0 0 0 .16-3.9s-1.3-.4-4 1.4a13.2 13.2 0 0 0-7 0c-2.7-1.8-4-1.4-4-1.4a5.7 5.7 0 0 0 .16 3.9 5.8 5.8 0 0 0-1.6 3.9c0 5.7 3.35 6.75 6.5 7.1a4.8 4.8 0 0 0-1 3.02v4"/><path d="M9 20c-5 1.5-5-2.5-7-3"/></svg>);
@@ -338,9 +321,6 @@ export default function App() {
   const [recruitmentName, setRecruitmentName] = useState('');
   const [mcqAnswer, setMcqAnswer] = useState('');
   const [userScore, setUserScore] = useState(0);
-  
-  // Firebase State
-  const [user, setUser] = useState(null);
   const [leaderboardData, setLeaderboardData] = useState([]);
 
   // AI Feature State
@@ -374,55 +354,48 @@ export default function App() {
   const ctaButtonRef = useRef(null);
   const audioCtxRef = useRef(null);
 
-  // --- FIREBASE AUTH & LEADERBOARD SUBSCRIPTION ---
+  // --- LOCALSTORAGE LEADERBOARD ENGINE ---
+  // Safely handles storage without requiring Firebase npm dependencies during build
   useEffect(() => {
-    if (!auth) return;
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch(e) { console.error(e); }
+    const fetchLeaderboard = () => {
+      const stored = localStorage.getItem('sutt_leaderboard');
+      if (stored) {
+        setLeaderboardData(JSON.parse(stored));
+      } else {
+        // Initialize with some dummy competitor data to make it look alive
+        const initialData = [
+          { name: "Trinity", score: 100, timestamp: Date.now() - 100000 },
+          { name: "Morpheus", score: 100, timestamp: Date.now() - 500000 },
+          { name: "Cypher", score: 0, timestamp: Date.now() - 800000 }
+        ];
+        localStorage.setItem('sutt_leaderboard', JSON.stringify(initialData));
+        setLeaderboardData(initialData);
+      }
     };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
+    fetchLeaderboard();
+  }, [recruitmentStep]);
 
-  useEffect(() => {
-    if (!user || !db) return;
-    const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'sutt_leaderboard');
-    const unsubscribe = onSnapshot(colRef, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      data.sort((a, b) => b.score - a.score || b.timestamp - a.timestamp);
-      setLeaderboardData(data);
-    }, (error) => {
-      console.error("Leaderboard fetch error:", error);
-    });
-    return () => unsubscribe();
-  }, [user]);
-
-  const submitRecruitmentAnswer = async () => {
+  const submitRecruitmentAnswer = () => {
     const isCorrect = mcqAnswer === 'O(log n)';
     const finalScore = isCorrect ? 100 : 0;
     setUserScore(finalScore);
     setRecruitmentStep(2);
     playSound(isCorrect ? 'tone' : 'glitch');
 
-    if (user && db) {
-      try {
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'sutt_leaderboard'), {
-          name: recruitmentName || 'Anonymous',
-          score: finalScore,
-          timestamp: Date.now(),
-          userId: user.uid
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    // Save to LocalStorage
+    const newEntry = {
+      name: recruitmentName || 'Anonymous',
+      score: finalScore,
+      timestamp: Date.now(),
+      isCurrentUser: true // Flag to highlight this entry
+    };
+
+    const currentLeaderboard = JSON.parse(localStorage.getItem('sutt_leaderboard') || '[]');
+    const updatedLeaderboard = [...currentLeaderboard, newEntry]
+      .sort((a, b) => b.score - a.score || a.timestamp - b.timestamp);
+    
+    localStorage.setItem('sutt_leaderboard', JSON.stringify(updatedLeaderboard));
+    setLeaderboardData(updatedLeaderboard);
   };
 
   // --- AUDIO SYSTEM ---
@@ -1368,7 +1341,7 @@ Keep it edgy, professional, and strictly formatted.`;
                          </h4>
                          <div className="flex flex-col gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                             {leaderboardData.length > 0 ? leaderboardData.slice(0, 10).map((entry, idx) => (
-                               <div key={idx} className={`flex justify-between items-center p-4 rounded-xl border ${entry.userId === user?.uid && entry.timestamp > Date.now() - 5000 ? 'bg-[#00ff88]/10 border-[#00ff88]/30 shadow-[0_0_10px_rgba(0,255,136,0.2)]' : 'bg-[#050505] border-white/5'}`}>
+                               <div key={idx} className={`flex justify-between items-center p-4 rounded-xl border ${entry.isCurrentUser && entry.timestamp > Date.now() - 5000 ? 'bg-[#00ff88]/10 border-[#00ff88]/30 shadow-[0_0_10px_rgba(0,255,136,0.2)]' : 'bg-[#050505] border-white/5'}`}>
                                   <div className="flex items-center gap-4">
                                      <span className="text-white/30 font-mono font-bold w-6">{idx + 1}.</span>
                                      <span className="text-white/90 font-bold tracking-wider">{entry.name}</span>
