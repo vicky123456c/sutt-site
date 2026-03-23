@@ -430,16 +430,16 @@ Keep it edgy, professional, and strictly formatted.`;
     if (typeTextRef.current) {
       const chars = typeTextRef.current.querySelectorAll('.char');
       gsap.fromTo(chars, 
-        { color: '#333333', opacity: 0.2 },
+        { color: '#222222', opacity: 0.05 }, // Decreased initial opacity and brightness
         {
-          color: '#888888', // Dull tech grey
+          color: '#aaaaaa', // Increased final brightness to be more visible
           opacity: 1,
           stagger: 0.1,
           ease: "none",
           scrollTrigger: {
             trigger: typeTextRef.current,
-            start: "top 70%",
-            end: "bottom 40%",
+            start: "top 80%",
+            end: "center 50%", // Now finishes exactly when reaching the middle of the screen
             scrub: 0.5,
           }
         }
@@ -450,23 +450,23 @@ Keep it edgy, professional, and strictly formatted.`;
     if (joinUsRef.current) {
       const chars = joinUsRef.current.querySelectorAll('.char');
       gsap.fromTo(chars, 
-        { opacity: 0.1 },
+        { opacity: 0.05 }, // Decreased initial opacity
         {
           opacity: 1,
           stagger: 0.1,
           ease: "none",
           scrollTrigger: {
             trigger: joinUsRef.current,
-            start: "top 70%",
-            end: "bottom 40%",
+            start: "top 80%",
+            end: "center 50%", // Now finishes exactly when reaching the middle of the screen
             scrub: 0.5,
           }
         }
       );
     }
 
-    // Dynamic Timeline Line Growth
-    if (timelineRef.current && timelineLineRef.current) {
+    // Dynamic Timeline Curve Connection
+    if (timelineCurveRef.current) {
       gsap.fromTo(timelineLineRef.current,
         { scaleY: 0 },
         {
