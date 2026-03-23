@@ -3,8 +3,25 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Terminal, Code2, Cpu, Shield, Users, ChevronDown, 
   Volume2, VolumeX, ArrowRight, ExternalLink, Sparkles, Loader2, Zap, Vote, BookOpen, GraduationCap, Lightbulb,
-  Mail, MessageSquare
+  Mail, MessageSquare, TerminalSquare, Clock, Save, ThumbsUp, Activity, Play, Gamepad2, Trophy, CheckCircle2, XCircle
 } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, addDoc, onSnapshot } from 'firebase/firestore';
+
+// --- FIREBASE INIT ---
+let app, auth, db, appId;
+try {
+  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+  if (firebaseConfig) {
+     app = initializeApp(firebaseConfig);
+     auth = getAuth(app);
+     db = getFirestore(app);
+     appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+  }
+} catch (e) {
+  console.error("Firebase init error", e);
+}
 
 // --- CUSTOM SOCIAL ICONS ---
 const Github = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.5-1.4 6.5-7.1a5.8 5.8 0 0 0-1.6-3.9 5.7 5.7 0 0 0 .16-3.9s-1.3-.4-4 1.4a13.2 13.2 0 0 0-7 0c-2.7-1.8-4-1.4-4-1.4a5.7 5.7 0 0 0 .16 3.9 5.8 5.8 0 0 0-1.6 3.9c0 5.7 3.35 6.75 6.5 7.1a4.8 4.8 0 0 0-1 3.02v4"/><path d="M9 20c-5 1.5-5-2.5-7-3"/></svg>);
@@ -60,6 +77,242 @@ const loadScript = (src) => {
   });
 };
 
+
+// --- DX BALL COMPONENT ---
+const DxBallGame = () => {
+  const canvasRef = useRef(null);
+  const [gameState, setGameState] = useState('playing'); // playing, won, lost
+  const [score, setScore] = useState(0);
+
+  const initGame = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    // Configuration
+    const ballRadius = 8;
+    let x = canvas.width / 2;
+    let y = canvas.height - 40;
+    let dx = 4 + Math.random() * 2;
+    let dy = -5;
+
+    const paddleHeight = 12;
+    const paddleWidth = 120;
+    let paddleX = (canvas.width - paddleWidth) / 2;
+
+    let rightPressed = false;
+    let leftPressed = false;
+
+    const brickRowCount = 5;
+    const brickColumnCount = 8;
+    const brickWidth = 80;
+    const brickHeight = 24;
+    const brickPadding = 12;
+    const brickOffsetTop = 60;
+    const brickOffsetLeft = (canvas.width - (brickColumnCount * (brickWidth + brickPadding) - brickPadding)) / 2;
+
+    let currentScore = 0;
+    let lives = 3;
+    let isGameOver = false;
+
+    const bricks = [];
+    for (let c = 0; c < brickColumnCount; c++) {
+      bricks[c] = [];
+      for (let r = 0; r < brickRowCount; r++) {
+        bricks[c][r] = { x: 0, y: 0, status: 1 };
+      }
+    }
+
+    const keyDownHandler = (e) => {
+      if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
+      else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
+    };
+
+    const keyUpHandler = (e) => {
+      if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
+      else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
+    };
+
+    const mouseMoveHandler = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      // Calculate scale to map screen pixels to internal canvas pixels
+      const scaleX = canvas.width / rect.width;
+      const relativeX = (e.clientX - rect.left) * scaleX;
+      
+      if (relativeX > 0 && relativeX < canvas.width) {
+        paddleX = relativeX - paddleWidth / 2;
+      }
+    };
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    canvas.addEventListener("mousemove", mouseMoveHandler, false);
+
+    const drawBall = () => {
+      ctx.beginPath();
+      ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "#00ff88";
+      ctx.fill();
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = "#00ff88";
+      ctx.closePath();
+      ctx.shadowBlur = 0; 
+    };
+
+    const drawPaddle = () => {
+      ctx.beginPath();
+      ctx.rect(paddleX, canvas.height - paddleHeight - 15, paddleWidth, paddleHeight);
+      ctx.fillStyle = "#00ff88";
+      ctx.fill();
+      ctx.closePath();
+    };
+
+    const drawBricks = () => {
+      for (let c = 0; c < brickColumnCount; c++) {
+        for (let r = 0; r < brickRowCount; r++) {
+          if (bricks[c][r].status === 1) {
+            const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+            const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+            bricks[c][r].x = brickX;
+            bricks[c][r].y = brickY;
+            ctx.beginPath();
+            ctx.rect(brickX, brickY, brickWidth, brickHeight);
+            ctx.fillStyle = r % 2 === 0 ? "#00ff88" : "#72C4D8";
+            ctx.fill();
+            ctx.closePath();
+          }
+        }
+      }
+    };
+
+    const drawHUD = () => {
+      ctx.font = "bold 16px monospace";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("SCORE: " + currentScore, 20, 30);
+      ctx.fillText("LIVES: " + lives, canvas.width - 100, 30);
+    };
+
+    const collisionDetection = () => {
+      for (let c = 0; c < brickColumnCount; c++) {
+        for (let r = 0; r < brickRowCount; r++) {
+          const b = bricks[c][r];
+          if (b.status === 1) {
+            if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+              dy = -dy;
+              b.status = 0;
+              currentScore++;
+              setScore(currentScore);
+              if (currentScore === brickRowCount * brickColumnCount) {
+                isGameOver = true;
+                setGameState('won');
+              }
+            }
+          }
+        }
+      }
+    };
+
+    const draw = () => {
+      if (isGameOver) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawBricks();
+      drawBall();
+      drawPaddle();
+      drawHUD();
+      collisionDetection();
+
+      if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+        dx = -dx;
+      }
+      if (y + dy < ballRadius) {
+        dy = -dy;
+      } else if (y + dy > canvas.height - ballRadius - paddleHeight - 5) {
+        if (x > paddleX && x < paddleX + paddleWidth) {
+          dy = -dy;
+          dx = dx + (x - (paddleX + paddleWidth/2)) * 0.05;
+        } else if (y + dy > canvas.height - ballRadius) {
+          lives--;
+          if (!lives) {
+            isGameOver = true;
+            setGameState('lost');
+          } else {
+            x = canvas.width / 2;
+            y = canvas.height - 40;
+            dx = 4;
+            dy = -5;
+            paddleX = (canvas.width - paddleWidth) / 2;
+          }
+        }
+      }
+
+      if (rightPressed && paddleX < canvas.width - paddleWidth) {
+        paddleX += 7;
+      } else if (leftPressed && paddleX > 0) {
+        paddleX -= 7;
+      }
+
+      x += dx;
+      y += dy;
+
+      if (!isGameOver) {
+        animationFrameId = requestAnimationFrame(draw);
+      }
+    };
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      document.removeEventListener("keydown", keyDownHandler);
+      document.removeEventListener("keyup", keyUpHandler);
+      canvas.removeEventListener("mousemove", mouseMoveHandler);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (gameState === 'playing') {
+      const cleanup = initGame();
+      return cleanup;
+    }
+  }, [gameState, initGame]);
+
+  return (
+    <div className="w-full max-w-4xl mx-auto bg-[#0a0a0a] p-4 rounded-3xl border border-[#00ff88]/30 shadow-[0_0_50px_rgba(0,255,136,0.1)] relative">
+      <div className="absolute top-4 left-6 flex items-center gap-2">
+         <div className="w-3 h-3 rounded-full bg-[#E3242B]"></div>
+         <div className="w-3 h-3 rounded-full bg-[#FDB813]"></div>
+         <div className="w-3 h-3 rounded-full bg-[#00ff88]"></div>
+      </div>
+      
+      <canvas
+        ref={canvasRef}
+        width={800}
+        height={600}
+        className={`w-full h-auto bg-[#050505] rounded-xl mt-8 cursor-none transition-opacity duration-300 ${gameState !== 'playing' ? 'opacity-30' : 'opacity-100'}`}
+        style={{ display: 'block', touchAction: 'none' }}
+      />
+      
+      {gameState !== 'playing' && (
+         <div className="absolute inset-0 flex flex-col items-center justify-center z-10 font-mono">
+            <h3 className={`text-5xl font-black mb-4 tracking-widest ${gameState === 'won' ? 'text-[#00ff88]' : 'text-[#E3242B]'}`}>
+              {gameState === 'won' ? 'SYSTEM SECURED' : 'SYSTEM FAILURE'}
+            </h3>
+            <p className="text-white/70 mb-8 text-lg">FINAL SCORE: <span className="text-white font-bold">{score}</span></p>
+            <button 
+              onClick={() => { setScore(0); setGameState('playing'); }}
+              className="flex items-center gap-2 bg-[#00ff88]/10 text-[#00ff88] border border-[#00ff88]/30 hover:bg-[#00ff88] hover:text-black px-8 py-4 rounded-full font-bold tracking-widest transition-all shadow-[0_0_20px_rgba(0,255,136,0.2)]"
+            >
+              <Play className="w-5 h-5" /> REBOOT SIMULATION
+            </button>
+         </div>
+      )}
+    </div>
+  );
+};
+
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -68,7 +321,7 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [curveData, setCurveData] = useState({ curve: "", combined: "", strokeWidth: 6 });
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState('home'); // home, recruitment, game
   
   // Custom Dropdown State
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
@@ -80,11 +333,34 @@ export default function App() {
     'Cybersecurity / DevOps'
   ];
 
+  // Smart Recruitment State
+  const [recruitmentStep, setRecruitmentStep] = useState(0);
+  const [recruitmentName, setRecruitmentName] = useState('');
+  const [mcqAnswer, setMcqAnswer] = useState('');
+  const [userScore, setUserScore] = useState(0);
+  
+  // Firebase State
+  const [user, setUser] = useState(null);
+  const [leaderboardData, setLeaderboardData] = useState([]);
+
   // AI Feature State
   const [campusProblem, setCampusProblem] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState('');
+  
+  // AI Additional Interactive States
+  const [aiIdeaSaved, setAiIdeaSaved] = useState(false);
+  const [aiIdeaVoted, setAiIdeaVoted] = useState(false);
+
+  // Terminal Feature State
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [terminalInput, setTerminalInput] = useState('');
+  const [terminalHistory, setTerminalHistory] = useState([
+    { type: 'res', text: 'SUTT MAINFRAME TERMINAL [Version 1.0.4]' },
+    { type: 'res', text: "Type 'help' to see available commands." }
+  ]);
+  const terminalInputRef = useRef(null);
 
   const containerRef = useRef(null);
   const matrixCanvasRef = useRef(null);
@@ -97,6 +373,57 @@ export default function App() {
   const combinedPathRef = useRef(null);
   const ctaButtonRef = useRef(null);
   const audioCtxRef = useRef(null);
+
+  // --- FIREBASE AUTH & LEADERBOARD SUBSCRIPTION ---
+  useEffect(() => {
+    if (!auth) return;
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch(e) { console.error(e); }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user || !db) return;
+    const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'sutt_leaderboard');
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      data.sort((a, b) => b.score - a.score || b.timestamp - a.timestamp);
+      setLeaderboardData(data);
+    }, (error) => {
+      console.error("Leaderboard fetch error:", error);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  const submitRecruitmentAnswer = async () => {
+    const isCorrect = mcqAnswer === 'O(log n)';
+    const finalScore = isCorrect ? 100 : 0;
+    setUserScore(finalScore);
+    setRecruitmentStep(2);
+    playSound(isCorrect ? 'tone' : 'glitch');
+
+    if (user && db) {
+      try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'sutt_leaderboard'), {
+          name: recruitmentName || 'Anonymous',
+          score: finalScore,
+          timestamp: Date.now(),
+          userId: user.uid
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
 
   // --- AUDIO SYSTEM ---
   useEffect(() => {
@@ -176,12 +503,84 @@ export default function App() {
     }
   }, [soundEnabled]);
 
+  // --- TERMINAL HOTKEY ENGINE ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.key === '`' || e.key === '~' || e.key === '/') && !isTerminalOpen && !loading) {
+        if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          setIsTerminalOpen(true);
+          playSound('glitch');
+        }
+      } else if (e.key === 'Escape' && isTerminalOpen) {
+        setIsTerminalOpen(false);
+        playSound('tone');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTerminalOpen, loading, playSound]);
+
+  useEffect(() => {
+    if (isTerminalOpen && terminalInputRef.current) {
+      terminalInputRef.current.focus();
+    }
+  }, [isTerminalOpen]);
+
+  const handleTerminalSubmit = (e) => {
+    if (e.key === 'Enter') {
+      const cmd = terminalInput.trim().toLowerCase();
+      let response = '';
+      
+      if (cmd === 'show projects') {
+        response = 'INITIALIZING PROJECT OVERLAY... (Scroll down to view active nodes)';
+        setTimeout(() => {
+          setIsTerminalOpen(false);
+          if (currentPage !== 'home') setCurrentPage('home');
+          setTimeout(() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }, 800);
+      } else if (cmd === 'join sutt' || cmd === 'open recruitment') {
+        response = 'UPLINK ESTABLISHED. REDIRECTING TO RECRUITMENT PROTOCOL...';
+        setTimeout(() => {
+          setIsTerminalOpen(false);
+          setCurrentPage('recruitment');
+          window.scrollTo(0,0);
+        }, 800);
+      } else if (cmd === 'whoami') {
+        response = 'GUEST_USER // INSUFFICIENT CLEARANCE // ANOMALY DETECTED';
+      } else if (cmd === 'clear') {
+        setTerminalHistory([]);
+        setTerminalInput('');
+        playSound('tone');
+        return;
+      } else if (cmd === 'help') {
+        response = 'AVAILABLE COMMANDS: show projects, join sutt, open recruitment, whoami, clear, exit';
+      } else if (cmd === 'exit') {
+        setIsTerminalOpen(false);
+        setTerminalInput('');
+        playSound('tone');
+        return;
+      } else if (cmd !== '') {
+        response = `COMMAND NOT RECOGNIZED: ${cmd}. TYPE 'help' FOR A LIST OF COMMANDS.`;
+      }
+
+      if (cmd !== '') {
+        setTerminalHistory(prev => [...prev, { type: 'cmd', text: `> ${cmd}` }, { type: 'res', text: response }]);
+      }
+      setTerminalInput('');
+      playSound('tone');
+    }
+  };
+
+
   // --- GEMINI API INTEGRATION ---
   const generateProjectSpec = async () => {
     if (!campusProblem.trim()) return;
     setIsGeneratingAi(true);
     setAiResponse('');
     setAiError('');
+    setAiIdeaSaved(false);
+    setAiIdeaVoted(false);
     playSound('glitch');
 
     const apiKey = ""; 
@@ -249,7 +648,6 @@ Keep it edgy, professional, and strictly formatted.`;
     const endX = tBgRect.left + (tBgRect.width / 2) - wrapperRect.left;
     const endY = tBgRect.top - wrapperRect.top;
     
-    // Line ends exactly 10px above the CTA button
     const bottomY = ctaRect ? ctaRect.top - wrapperRect.top - 10 : tBgRect.bottom - wrapperRect.top;
 
     const cp1X = startX;
@@ -451,6 +849,23 @@ Keep it edgy, professional, and strictly formatted.`;
         );
       });
 
+      // Animated Metrics Counter Engine
+      gsap.utils.toArray('.metric-number').forEach((el) => {
+        const targetVal = parseInt(el.getAttribute('data-target'), 10);
+        gsap.fromTo(el, 
+          { innerText: 0 }, 
+          {
+            innerText: targetVal,
+            duration: 1.2, 
+            ease: "power3.out",
+            snap: { innerText: 1 },
+            scrollTrigger: {
+              trigger: '.metrics-container', 
+              start: "top 85%"
+            }
+        });
+      });
+
       if (typeTextRef.current) {
         const chars = typeTextRef.current.querySelectorAll('.char');
         gsap.fromTo(chars, 
@@ -535,7 +950,6 @@ Keep it edgy, professional, and strictly formatted.`;
     };
   }, [libsLoaded, loading, currentPage]);
 
-  // Handle SVG Curve Animation safely after coordinates map
   useEffect(() => {
     if (loading || !libsLoaded || !window.gsap || !curveData.combined || !combinedPathRef.current || currentPage !== 'home') return;
     const gsap = window.gsap;
@@ -581,6 +995,14 @@ Keep it edgy, professional, and strictly formatted.`;
     const card = e.currentTarget;
     card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
   };
+
+  // Team array extracted for the Marquee feature
+  const teamMembers = [
+    { name: 'Alex Chen', role: 'Lead Developer', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80' },
+    { name: 'Samantha Lee', role: 'UI/UX Lead', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
+    { name: 'Jordan Davis', role: 'Systems Architect', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
+    { name: 'Priya Sharma', role: 'Security Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80' }
+  ];
 
 
   if (loading) {
@@ -665,6 +1087,11 @@ Keep it edgy, professional, and strictly formatted.`;
         .animate-dropdown {
           animation: dropdownSlide 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00ff88; }
 
         .tilt-card { transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-style: preserve-3d; }
         .tilt-card-content { transform: translateZ(40px); }
@@ -691,12 +1118,52 @@ Keep it edgy, professional, and strictly formatted.`;
         className="fixed inset-0 z-0 pointer-events-none mix-blend-screen"
       />
 
+      {/* --- TERMINAL OVERLAY UI --- */}
+      {isTerminalOpen && (
+        <div className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-md p-6 md:p-12 font-mono flex flex-col">
+           <div className="flex justify-between items-center mb-8 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-4 text-[#00ff88]">
+                 <TerminalSquare className="w-6 h-6" />
+                 <span className="font-bold tracking-widest">SUTT_SYS_TERMINAL</span>
+              </div>
+              <button 
+                onClick={() => setIsTerminalOpen(false)}
+                className="text-white/50 hover:text-white transition-colors text-xs tracking-widest"
+              >
+                [ESC] TO CLOSE
+              </button>
+           </div>
+           
+           <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-4 scrollbar-hide text-sm md:text-base">
+              {terminalHistory.map((line, i) => (
+                 <div key={i} className={line.type === 'cmd' ? 'text-white' : 'text-[#00ff88]'}>
+                    {line.text}
+                 </div>
+              ))}
+           </div>
+           
+           <div className="flex items-center gap-3 text-white text-sm md:text-base mt-auto pt-4 border-t border-white/10">
+              <span className="text-[#00ff88] animate-pulse">{'>'}</span>
+              <input 
+                ref={terminalInputRef}
+                type="text" 
+                value={terminalInput}
+                onChange={(e) => setTerminalInput(e.target.value)}
+                onKeyDown={handleTerminalSubmit}
+                className="w-full bg-transparent border-none outline-none text-white focus:ring-0"
+                spellCheck={false}
+                autoComplete="off"
+              />
+           </div>
+        </div>
+      )}
+
       {/* --- GLASS HEADER --- */}
       <nav className="fixed top-0 w-full z-50 p-6 flex justify-between items-center bg-[#050505]/60 backdrop-blur-xl border-b border-white/5">
         <div 
           className="font-bold text-lg tracking-widest flex items-center gap-4 cursor-pointer"
           onClick={() => { 
-            if (currentPage === 'recruitment') {
+            if (currentPage === 'recruitment' || currentPage === 'game') {
               window.location.reload();
             } else {
               window.scrollTo(0,0); 
@@ -708,12 +1175,27 @@ Keep it edgy, professional, and strictly formatted.`;
           <span style={{ fontFamily: "'Orbitron', sans-serif" }}>SUTT</span>
         </div>
         <div className="flex items-center gap-8 text-xs tracking-widest text-white/70">
+          {/* Terminal Hint for Desktop */}
+          <div className="hidden md:flex items-center gap-2 text-white/30 mr-4">
+             <TerminalSquare className="w-4 h-4" />
+             <span>Press <span className="bg-white/10 px-1.5 py-0.5 rounded">/</span> for terminal</span>
+          </div>
+
           <button 
             onClick={() => { initAudio(); setSoundEnabled(!soundEnabled); }} 
             className="hover:text-[#00ff88] transition-colors"
           >
             {soundEnabled ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
           </button>
+          
+          {/* Terminal Button specifically for Mobile since they don't have hotkeys */}
+          <button 
+            className="md:hidden hover:text-[#00ff88] transition-colors"
+            onClick={() => { setIsTerminalOpen(true); playSound('glitch'); }}
+          >
+            <Terminal className="w-4 h-4" />
+          </button>
+
           {currentPage === 'home' && (
             <>
               <a href="#projects" className="hidden md:block hover:text-white transition-colors btn-glitch" onMouseEnter={() => playSound('glitch')}>
@@ -740,7 +1222,20 @@ Keep it edgy, professional, and strictly formatted.`;
 
       {/* --- MAIN CONTENT --- */}
       <main className="relative z-10 w-full flex flex-col gap-24 md:gap-32 pb-0">
-        {currentPage === 'recruitment' ? (
+        {currentPage === 'game' ? (
+           <section className="pt-32 px-6 md:px-12 w-full max-w-[1000px] mx-auto min-h-screen flex flex-col items-center pb-16">
+              <div className="gsap-recruitment-reveal mb-8 w-full">
+                <button onClick={() => setCurrentPage('home')} className="text-white/50 hover:text-[#00ff88] text-sm tracking-widest flex items-center gap-2 transition-colors group">
+                   <ArrowRight className="w-4 h-4 rotate-180 transform group-hover:-translate-x-1 transition-transform" /> TERMINATE SIMULATION
+                </button>
+              </div>
+              <div className="text-[#00ff88] font-bold text-2xl mb-4 tracking-widest uppercase flex items-center gap-4">
+                 <TerminalSquare className="w-6 h-6 animate-pulse" /> SUTT // DX_BALL ENGINE
+              </div>
+              <DxBallGame />
+           </section>
+
+        ) : currentPage === 'recruitment' ? (
           <section className="pt-32 px-6 md:px-12 w-full max-w-[1000px] mx-auto min-h-screen flex flex-col pb-16">
              <div className="gsap-recruitment-reveal mb-12 mt-10">
                 <button
@@ -754,68 +1249,139 @@ Keep it edgy, professional, and strictly formatted.`;
              <div className="gsap-recruitment-reveal bg-[#0a0a0a] border border-[#00ff88]/30 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_rgba(0,255,136,0.1)] relative overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[#00ff88]/50 to-transparent"></div>
                 
-                <h2 className="text-3xl md:text-5xl font-black text-[#00ff88] mb-4" style={{ fontFamily: "'Orbitron', sans-serif" }}>RECRUITMENT_PROTOCOL</h2>
-                <p className="text-white/60 mb-12 leading-relaxed">Enter your credentials to initiate the application process. Only the most ambitious architects need apply.</p>
+                {recruitmentStep === 0 && (
+                  <>
+                    <h2 className="text-3xl md:text-5xl font-black text-[#00ff88] mb-4" style={{ fontFamily: "'Orbitron', sans-serif" }}>RECRUITMENT_PROTOCOL</h2>
+                    <p className="text-white/60 mb-12 leading-relaxed">Enter your credentials to initiate the application process. Only the most ambitious architects need apply.</p>
 
-                <form className="flex flex-col gap-8" onSubmit={(e) => { e.preventDefault(); playSound('tone'); }}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div>
-                       <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">ID_STRING (FULL NAME)</label>
-                       <input type="text" placeholder="e.g. Neo" className="w-full bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors" />
-                     </div>
-                     <div>
-                       <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">COMM_LINK (EMAIL)</label>
-                       <input type="email" placeholder="neo@matrix.edu" className="w-full bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors" />
-                     </div>
-                  </div>
-                  
-                  {/* --- FULLY CUSTOM DROPDOWN TO REPLACE NATIVE <SELECT> --- */}
-                  <div className="relative z-50">
-                     <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">PRIMARY_DOMAIN (ROLE)</label>
-                     
-                     <div 
-                       onClick={() => { setIsRoleDropdownOpen(!isRoleDropdownOpen); playSound('glitch'); }}
-                       className={`w-full bg-[#050505] border ${isRoleDropdownOpen ? 'border-[#00ff88]/50' : 'border-white/10'} p-5 rounded-2xl text-white cursor-pointer flex justify-between items-center transition-colors`}
-                     >
-                        <span className={selectedRole ? 'text-white' : 'text-white/50'}>
-                          {selectedRole}
-                        </span>
-                        <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isRoleDropdownOpen ? 'rotate-180 text-[#00ff88]' : 'text-white/50'}`} />
-                     </div>
-
-                     {isRoleDropdownOpen && (
-                       <>
+                    <form className="flex flex-col gap-8" onSubmit={(e) => { e.preventDefault(); setRecruitmentStep(1); playSound('tone'); }}>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div>
+                           <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">ID_STRING (FULL NAME)</label>
+                           <input type="text" required value={recruitmentName} onChange={e => setRecruitmentName(e.target.value)} placeholder="e.g. Neo" className="w-full bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors" />
+                         </div>
+                         <div>
+                           <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">COMM_LINK (EMAIL)</label>
+                           <input type="email" required placeholder="neo@matrix.edu" className="w-full bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors" />
+                         </div>
+                      </div>
+                      
+                      {/* --- FULLY CUSTOM DROPDOWN TO REPLACE NATIVE <SELECT> --- */}
+                      <div className="relative z-50">
+                         <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">PRIMARY_DOMAIN (ROLE)</label>
+                         
                          <div 
-                           className="fixed inset-0 z-40" 
-                           onClick={() => setIsRoleDropdownOpen(false)}
-                         ></div>
-                         <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-[#0a0a0a] border border-[#00ff88]/30 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.9)] z-50 origin-top animate-dropdown">
-                            {availableRoles.map((role, idx) => (
-                              <div 
-                                key={idx}
-                                onClick={() => { setSelectedRole(role); setIsRoleDropdownOpen(false); playSound('tone'); }}
-                                className={`p-5 cursor-pointer border-b border-white/5 last:border-none transition-colors duration-200 ${selectedRole === role ? 'bg-[#00ff88]/10 text-[#00ff88] font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
-                              >
-                                {role}
-                              </div>
+                           onClick={() => { setIsRoleDropdownOpen(!isRoleDropdownOpen); playSound('glitch'); }}
+                           className={`w-full bg-[#050505] border ${isRoleDropdownOpen ? 'border-[#00ff88]/50' : 'border-white/10'} p-5 rounded-2xl text-white cursor-pointer flex justify-between items-center transition-colors`}
+                         >
+                            <span className={selectedRole ? 'text-white' : 'text-white/50'}>
+                              {selectedRole}
+                            </span>
+                            <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isRoleDropdownOpen ? 'rotate-180 text-[#00ff88]' : 'text-white/50'}`} />
+                         </div>
+
+                         {isRoleDropdownOpen && (
+                           <>
+                             <div 
+                               className="fixed inset-0 z-40" 
+                               onClick={() => setIsRoleDropdownOpen(false)}
+                             ></div>
+                             <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-[#0a0a0a] border border-[#00ff88]/30 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.9)] z-50 origin-top animate-dropdown">
+                                {availableRoles.map((role, idx) => (
+                                  <div 
+                                    key={idx}
+                                    onClick={() => { setSelectedRole(role); setIsRoleDropdownOpen(false); playSound('tone'); }}
+                                    className={`p-5 cursor-pointer border-b border-white/5 last:border-none transition-colors duration-200 ${selectedRole === role ? 'bg-[#00ff88]/10 text-[#00ff88] font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
+                                  >
+                                    {role}
+                                  </div>
+                                ))}
+                             </div>
+                           </>
+                         )}
+                      </div>
+
+                      <div>
+                         <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">MOTIVATION_MATRIX (WHY SUTT?)</label>
+                         <textarea required placeholder="Tell us about your drive to build..." className="w-full h-40 bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors resize-none leading-relaxed"></textarea>
+                      </div>
+
+                      <button 
+                        type="submit"
+                        className="w-full mt-4 bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] hover:bg-[#00ff88] hover:text-black py-6 rounded-2xl font-bold tracking-[0.3em] text-sm uppercase transition-all duration-300 shadow-[0_0_20px_rgba(0,255,136,0.1)] hover:shadow-[0_0_40px_rgba(0,255,136,0.3)]"
+                        onMouseEnter={() => playSound('glitch')}
+                      >
+                        TRANSMIT APPLICATION
+                      </button>
+                    </form>
+                  </>
+                )}
+
+                {recruitmentStep === 1 && (
+                   <div className="animate-[fadeIn_0.5s_ease-out] flex flex-col gap-6">
+                      <div className="bg-[#00ff88]/10 border border-[#00ff88]/30 rounded-2xl p-6 text-center">
+                         <h3 className="text-2xl font-bold text-[#00ff88] mb-2 tracking-widest">SHORTLISTED // ROUND 1</h3>
+                         <p className="text-white/70 text-sm">System has accepted your preliminary data. Proceed to the technical assessment.</p>
+                      </div>
+
+                      <div className="bg-[#050505] border border-white/10 rounded-2xl p-8 shadow-inner">
+                         <h4 className="text-lg font-bold text-white mb-6">Q: What is the average time complexity of a search operation in a perfectly balanced Binary Search Tree?</h4>
+                         <div className="flex flex-col gap-4">
+                            {['O(1)', 'O(n)', 'O(log n)', 'O(n log n)'].map(opt => (
+                               <div 
+                                 key={opt}
+                                 onClick={() => { setMcqAnswer(opt); playSound('tone'); }}
+                                 className={`p-5 rounded-xl border cursor-pointer transition-all duration-200 ${mcqAnswer === opt ? 'border-[#00ff88] bg-[#00ff88]/10 text-[#00ff88] font-bold shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10 hover:border-white/30 text-white/70 hover:text-white hover:bg-white/5'}`}
+                               >
+                                  <span className="font-mono">{opt}</span>
+                               </div>
                             ))}
                          </div>
-                       </>
-                     )}
-                  </div>
+                      </div>
 
-                  <div>
-                     <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">MOTIVATION_MATRIX (WHY SUTT?)</label>
-                     <textarea placeholder="Tell us about your drive to build..." className="w-full h-40 bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors resize-none leading-relaxed"></textarea>
-                  </div>
+                      <button 
+                        disabled={!mcqAnswer}
+                        onClick={submitRecruitmentAnswer}
+                        className="w-full mt-4 bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] hover:bg-[#00ff88] hover:text-black py-6 rounded-2xl font-bold tracking-[0.3em] text-sm uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onMouseEnter={() => { if(mcqAnswer) playSound('glitch'); }}
+                      >
+                        EVALUATE RESPONSE
+                      </button>
+                   </div>
+                )}
 
-                  <button 
-                    className="w-full mt-4 bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] hover:bg-[#00ff88] hover:text-black py-6 rounded-2xl font-bold tracking-[0.3em] text-sm uppercase transition-all duration-300 shadow-[0_0_20px_rgba(0,255,136,0.1)] hover:shadow-[0_0_40px_rgba(0,255,136,0.3)]"
-                    onMouseEnter={() => playSound('glitch')}
-                  >
-                    TRANSMIT APPLICATION
-                  </button>
-                </form>
+                {recruitmentStep === 2 && (
+                   <div className="animate-[fadeIn_0.5s_ease-out] flex flex-col gap-8">
+                      <div className="text-center py-6">
+                         {userScore > 0 ? (
+                            <CheckCircle2 className="w-20 h-20 text-[#00ff88] mx-auto mb-6 drop-shadow-[0_0_15px_rgba(0,255,136,0.5)]" />
+                         ) : (
+                            <XCircle className="w-20 h-20 text-[#E3242B] mx-auto mb-6 drop-shadow-[0_0_15px_rgba(227,36,43,0.5)]" />
+                         )}
+                         <h3 className="text-4xl font-black tracking-widest mb-4 text-white">SCORE: <span className={userScore > 0 ? 'text-[#00ff88]' : 'text-[#E3242B]'}>{userScore}</span></h3>
+                         <p className="text-white/60 text-lg">{userScore > 0 ? 'Excellent. You are in the top percentile.' : 'Assessment failed. Better luck next deployment.'}</p>
+                      </div>
+
+                      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8">
+                         <h4 className="flex items-center gap-3 text-[#00ff88] font-bold tracking-widest mb-6 border-b border-white/5 pb-4">
+                            <Trophy className="w-5 h-5" /> GLOBAL LEADERBOARD
+                         </h4>
+                         <div className="flex flex-col gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            {leaderboardData.length > 0 ? leaderboardData.slice(0, 10).map((entry, idx) => (
+                               <div key={idx} className={`flex justify-between items-center p-4 rounded-xl border ${entry.userId === user?.uid && entry.timestamp > Date.now() - 5000 ? 'bg-[#00ff88]/10 border-[#00ff88]/30 shadow-[0_0_10px_rgba(0,255,136,0.2)]' : 'bg-[#050505] border-white/5'}`}>
+                                  <div className="flex items-center gap-4">
+                                     <span className="text-white/30 font-mono font-bold w-6">{idx + 1}.</span>
+                                     <span className="text-white/90 font-bold tracking-wider">{entry.name}</span>
+                                  </div>
+                                  <span className={`font-mono font-bold ${entry.score > 0 ? 'text-[#00ff88]' : 'text-white/30'}`}>{entry.score} PTS</span>
+                               </div>
+                            )) : (
+                               <div className="text-center text-white/30 py-8 text-sm tracking-widest">AWAITING MAINFRAME DATA...</div>
+                            )}
+                         </div>
+                      </div>
+                   </div>
+                )}
              </div>
           </section>
         ) : (
@@ -823,14 +1389,20 @@ Keep it edgy, professional, and strictly formatted.`;
             {/* SECTION 1: HERO */}
             <section className="h-screen flex flex-col items-center justify-center relative px-6 md:px-12 w-full overflow-hidden">
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10 blur-[3px] select-none pointer-events-none">
-                {/* Reduced font size from 19vw to 17vw */}
                 <span className="text-[17vw] font-black leading-[1.4] tracking-[0.28em] whitespace-nowrap text-[#444] pl-[0.28em]">BUILD</span>
                 <span className="text-[17vw] font-black leading-[1.4] tracking-[0.28em] whitespace-nowrap text-[#444] pl-[0.28em]">INNOVATE</span>
               </div>
               
               <div className="z-10 flex flex-col items-center text-center">
-                <div className="mb-10 p-2">
+                <div 
+                  className="mb-10 p-2 cursor-pointer hover:scale-110 transition-all duration-300 relative z-50 group flex flex-col items-center"
+                  onClick={() => { setCurrentPage('game'); window.scrollTo(0,0); playSound('glitch'); }}
+                >
                   <SuttLogo className="w-20 h-20" hoverable={true} />
+                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center">
+                    <Gamepad2 className="w-6 h-6 text-[#00ff88] animate-bounce" />
+                    <span className="text-[#00ff88] text-[9px] tracking-[0.3em] font-bold whitespace-nowrap mt-1 drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]">ARCADE MODE</span>
+                  </div>
                 </div>
                 
                 <h1 
@@ -870,11 +1442,34 @@ Keep it edgy, professional, and strictly formatted.`;
               </h2>
             </section>
 
-            {/* SECTION 3: IMMERSIVE PROJECTS */}
+            {/* SECTION 2.5: IMPACT METRICS ENGINE */}
+            <section className="pt-10 pb-20 overflow-hidden relative z-10 w-full">
+              <div className="metrics-container relative border-y border-white/10 py-12 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center max-w-[1600px] mx-auto px-6 md:px-12">
+                  {[
+                    { label: "Students Served", target: 10000, prefix: "", suffix: "+" },
+                    { label: "Projects Shipped", target: 25, prefix: "", suffix: "+" },
+                    { label: "Uptime", target: 99, prefix: "", suffix: ".9%" },
+                    { label: "Core Developers", target: 8, prefix: "", suffix: "" },
+                  ].map((metric, i) => (
+                     <div key={i} className="gsap-reveal flex flex-col items-center justify-center" onMouseEnter={() => playSound('tone')}>
+                        <div className="text-4xl md:text-5xl font-black text-[#00ff88] mb-2 font-mono flex items-center shadow-black drop-shadow-[0_0_15px_rgba(0,255,136,0.3)]">
+                           {metric.prefix}<span className="metric-number" data-target={metric.target}>0</span>{metric.suffix}
+                        </div>
+                        <div className="text-xs tracking-widest text-white/60 uppercase">{metric.label}</div>
+                     </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 3: IMMERSIVE LIVE PROJECTS */}
             <section id="projects" className="pt-20 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
               <div className="gsap-reveal mb-12 text-center md:text-left">
-                <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">01 // OPEN SOURCE DEPLOYS</h2>
-                <h3 className="text-4xl font-light"><span className="font-bold">Our Projects</span></h3>
+                <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4 flex justify-center md:justify-start items-center gap-2">
+                  <Activity className="w-4 h-4 animate-pulse" /> 01 // LIVE DASHBOARD
+                </h2>
+                <h3 className="text-4xl font-light"><span className="font-bold">Active Deployments</span></h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -882,41 +1477,51 @@ Keep it edgy, professional, and strictly formatted.`;
                   { 
                     title: "Campus Nav API", tags: ["Go", "Mapbox", "Redis"], 
                     desc: "Real-time routing engine handling 5k requests/min for the official university app.",
-                    img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80"
+                    img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80",
+                    status: "LIVE", statusColor: "bg-[#00ff88]", users: "5,200+", updated: "2 days ago"
                   },
                   { 
                     title: "SU Voting Platform", tags: ["Next.js", "Web3 Auth"], 
                     desc: "Cryptographically secure election portal replacing legacy paper systems.",
-                    img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
+                    img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
+                    status: "IN PROGRESS", statusColor: "bg-[#FDB813]", users: "Beta Phase", updated: "5 hrs ago"
                   },
                   { 
                     title: "Event Ticketing Node", tags: ["Node.js", "PostgreSQL"], 
                     desc: "High-throughput microservice for instantaneous campus concert booking.",
-                    img: "https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?auto=format&fit=crop&w=800&q=80"
+                    img: "https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?auto=format&fit=crop&w=800&q=80",
+                    status: "LIVE", statusColor: "bg-[#00ff88]", users: "12,000+", updated: "1 week ago"
                   },
                   { 
                     title: "Room Booking UI", tags: ["React", "Tailwind"], 
                     desc: "Fluid, state-driven interface integrating with the legacy library database.",
-                    img: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
+                    img: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80",
+                    status: "DEPRECATED", statusColor: "bg-[#E3242B]", users: "Archived", updated: "1 year ago"
                   }
                 ].map((proj, i) => {
                   return (
                     <div 
                       key={i} 
-                      className="gsap-reveal tilt-card group relative h-[400px] rounded-2xl overflow-hidden bg-[#0a0a0a] border border-white/5 cursor-pointer shadow-lg"
+                      className="gsap-reveal tilt-card group relative h-[420px] rounded-2xl overflow-hidden bg-[#0a0a0a] border border-white/5 cursor-pointer shadow-[0_0_30px_rgba(0,0,0,0.5)]"
                       onMouseMove={handleTilt}
                       onMouseLeave={resetTilt}
                       onMouseEnter={() => playSound('tone')}
                     >
+                      {/* Live Status Badge */}
+                      <div className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-[#050505]/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
+                         <div className={`w-2 h-2 rounded-full animate-pulse ${proj.statusColor}`}></div>
+                         <span className="text-[9px] font-bold tracking-widest text-white uppercase">{proj.status}</span>
+                      </div>
+
                       <div 
                         className="absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-110 opacity-40 group-hover:opacity-10"
                         style={{ backgroundImage: `url(${proj.img})` }}
                       ></div>
                       
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent"></div>
                       
                       <div className="tilt-card-content absolute inset-0 p-8 flex flex-col justify-end transition-all duration-500">
-                        <div className="transform group-hover:-translate-y-[140px] transition-transform duration-500 ease-out">
+                        <div className="transform group-hover:-translate-y-[150px] transition-transform duration-500 ease-out">
                           <h4 className="text-3xl font-bold text-white group-hover:text-[#00ff88] transition-colors">{proj.title}</h4>
                         </div>
 
@@ -929,9 +1534,15 @@ Keep it edgy, professional, and strictly formatted.`;
                               </span>
                             ))}
                           </div>
+                          
+                          {/* Added Metrics to the Dashboard view */}
+                          <div className="flex items-center gap-6 text-[10px] tracking-widest text-white/50 uppercase mt-2 pt-4 border-t border-white/10">
+                            <span className="flex items-center gap-1.5"><Users className="w-3 h-3 text-[#00ff88]" /> {proj.users}</span>
+                            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-[#00ff88]" /> {proj.updated}</span>
+                          </div>
                         </div>
 
-                        <div className="absolute top-8 right-8 w-10 h-10 rounded-full border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500 bg-[#050505]/50 backdrop-blur-md">
+                        <div className="absolute top-6 right-6 w-10 h-10 rounded-full border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500 bg-[#050505]/50 backdrop-blur-md">
                           <ExternalLink className="w-4 h-4 text-[#00ff88]" />
                         </div>
                       </div>
@@ -1082,9 +1693,9 @@ Keep it edgy, professional, and strictly formatted.`;
               </section>
             </div>
 
-            {/* SECTION 6: THE TEAM */}
-            <section id="team" className="pt-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
-              <div className="gsap-reveal mb-12 text-center md:text-left flex justify-between items-end">
+            {/* SECTION 6: THE TEAM (Now a seamlessly scrolling Marquee!) */}
+            <section id="team" className="pt-10 pb-10 relative z-10 w-full overflow-hidden">
+              <div className="max-w-[1600px] mx-auto px-6 md:px-12 mb-12 flex justify-between items-end">
                  <div>
                    <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">03 // THE ARCHITECTS</h2>
                    <h3 className="text-4xl font-light">Meet the <span className="font-bold">Core Team</span></h3>
@@ -1097,33 +1708,32 @@ Keep it edgy, professional, and strictly formatted.`;
                  </button>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {[
-                  { name: 'Alex Chen', role: 'Lead Developer', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80' },
-                  { name: 'Samantha Lee', role: 'UI/UX Lead', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
-                  { name: 'Jordan Davis', role: 'Systems Architect', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
-                  { name: 'Priya Sharma', role: 'Security Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80' }
-                ].map((member, i) => (
-                  <div 
-                    key={i} 
-                    className="gsap-reveal group relative cursor-pointer"
-                    onMouseEnter={() => playSound('tone')}
-                  >
-                    <div className="aspect-[4/5] rounded-2xl bg-[#0a0a0a] border border-white/5 overflow-hidden relative grayscale group-hover:grayscale-0 transition-all duration-700 shadow-lg">
-                       <img 
-                         src={member.img} 
-                         alt="Team member" 
-                         className="w-full h-full object-cover mix-blend-luminosity opacity-40 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
-                       />
-                       <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90"></div>
-                       
-                       <div className="absolute bottom-6 left-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                          <div className="font-bold text-lg mb-1">{member.name}</div>
-                          <div className="text-[10px] tracking-widest text-[#00ff88]">{member.role}</div>
+              {/* The Team Marquee Wrapper */}
+              <div className="marquee-container py-4">
+                 {/* Duplicate the team array to create a seamless infinite scrolling loop */}
+                 <div className="marquee-content items-center gap-6 px-3" style={{ animationDuration: '40s' }}>
+                   {[...teamMembers, ...teamMembers].map((member, i) => (
+                     <div 
+                       key={i} 
+                       className="w-[280px] md:w-[320px] flex-shrink-0 group relative cursor-pointer"
+                       onMouseEnter={() => playSound('tone')}
+                     >
+                       <div className="aspect-[4/5] rounded-2xl bg-[#0a0a0a] border border-white/5 overflow-hidden relative grayscale group-hover:grayscale-0 transition-all duration-700 shadow-lg">
+                          <img 
+                            src={member.img} 
+                            alt="Team member" 
+                            className="w-full h-full object-cover mix-blend-luminosity opacity-40 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90"></div>
+                          
+                          <div className="absolute bottom-6 left-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                             <div className="font-bold text-lg mb-1">{member.name}</div>
+                             <div className="text-[10px] tracking-widest text-[#00ff88]">{member.role}</div>
+                          </div>
                        </div>
-                    </div>
-                  </div>
-                ))}
+                     </div>
+                   ))}
+                 </div>
               </div>
             </section>
 
@@ -1198,18 +1808,34 @@ Keep it edgy, professional, and strictly formatted.`;
                       </>
                     ) : (
                       <div className="bg-[#050505] border border-[#00ff88]/20 rounded-2xl p-8 animate-[fadeIn_0.5s_ease-out]">
-                        <h4 className="text-[#00ff88] font-bold mb-4 flex items-center gap-2">
+                        <h4 className="text-[#00ff88] font-bold mb-4 flex items-center gap-2 pb-4 border-b border-[#00ff88]/20">
                           <Lightbulb className="w-5 h-5" /> IDEA ACCEPTED. BLUEPRINT GENERATED.
                         </h4>
-                        <div className="text-white/80 whitespace-pre-wrap leading-loose text-sm">
+                        <div className="text-white/80 whitespace-pre-wrap leading-loose text-sm mt-6">
                           {aiResponse}
                         </div>
-                        <button 
-                          onClick={() => { setAiResponse(''); setCampusProblem(''); }}
-                          className="mt-8 border border-white/20 px-6 py-3 rounded-full text-xs hover:bg-white/10 transition-colors tracking-widest"
-                        >
-                          SUBMIT ANOTHER
-                        </button>
+                        
+                        {/* New Save/Vote Interaction Panel */}
+                        <div className="flex flex-col sm:flex-row gap-4 mt-10 pt-6 border-t border-[#00ff88]/10">
+                          <button 
+                            onClick={() => { setAiIdeaSaved(true); playSound('tone'); }}
+                            className={`flex-1 border ${aiIdeaSaved ? 'border-[#00ff88] bg-[#00ff88]/10 text-[#00ff88]' : 'border-white/20 hover:bg-white/10'} px-6 py-4 rounded-xl text-xs transition-colors tracking-widest uppercase flex items-center justify-center gap-2`}
+                          >
+                            <Save className="w-4 h-4" /> {aiIdeaSaved ? 'BLUEPRINT SAVED' : 'SAVE IDEA'}
+                          </button>
+                          <button 
+                            onClick={() => { setAiIdeaVoted(true); playSound('tone'); }}
+                            className={`flex-1 border ${aiIdeaVoted ? 'border-[#00ff88] bg-[#00ff88]/10 text-[#00ff88]' : 'border-white/20 hover:bg-white/10'} px-6 py-4 rounded-xl text-xs transition-colors tracking-widest uppercase flex items-center justify-center gap-2`}
+                          >
+                            <ThumbsUp className="w-4 h-4" /> {aiIdeaVoted ? 'VOTE RECORDED' : 'VOTE UP'}
+                          </button>
+                          <button 
+                            onClick={() => { setAiResponse(''); setCampusProblem(''); setAiIdeaSaved(false); setAiIdeaVoted(false); playSound('glitch'); }}
+                            className="flex-1 border border-white/20 px-6 py-4 rounded-xl text-xs hover:bg-white/10 transition-colors tracking-widest uppercase"
+                          >
+                            SUBMIT ANOTHER
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1218,7 +1844,7 @@ Keep it edgy, professional, and strictly formatted.`;
             </section>
 
             {/* SECTION 9: TOOLS WE USE & WHO WE WORK WITH (SCROLLING LOGOS) */}
-            <section className="pt-10 overflow-hidden relative z-10 w-full">
+            <section className="pt-10 overflow-hidden relative z-10 w-full pb-20">
               <div className="relative border-y border-white/10 py-10 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
                 
                 <div className="marquee-container opacity-50 mb-10">
@@ -1266,7 +1892,7 @@ Keep it edgy, professional, and strictly formatted.`;
       <footer id="contact" className="border-t border-white/5 pt-20 pb-12 text-center bg-[#030303] relative z-10 w-full mt-auto">
         {/* Socials Block */}
         <div className="gsap-reveal max-w-[1000px] mx-auto px-6 md:px-12 mb-16 text-center">
-           <h2 className="text-xs text-[#00ff88] tracking-[0.4em] mb-4 font-bold">05 // INITIATE COMMS</h2>
+           <h2 className="text-xs text-[#00ff88] tracking-[0.4em] mb-4 font-bold uppercase">Initiate Comms</h2>
            <h3 className="text-4xl md:text-5xl font-light mb-12">Connect With <span className="font-bold">The Network</span></h3>
            
            <div className="flex flex-wrap justify-center gap-6 md:gap-8">
@@ -1278,7 +1904,7 @@ Keep it edgy, professional, and strictly formatted.`;
                { icon: MessageSquare, name: "Discord", href: "#" },
                { icon: Mail, name: "Email", href: "#" }
              ].map((social, i) => (
-               <a key={i} href={social.href} className="group relative w-14 h-14 md:w-16 md:h-16 bg-[#0a0a0a] border border-white/10 rounded-2xl flex items-center justify-center hover:border-[#00ff88]/50 hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-[0_10px_30px_rgba(0,255,136,0.2)]" onMouseEnter={() => playSound('tone')}>
+               <a key={i} href={social.href} className="group relative w-14 h-14 md:w-16 md:h-16 bg-[#0a0a0a] border border-white/10 rounded-2xl flex items-center justify-center hover:border-[#00ff88]/50 hover:-translate-y-2 transition-all duration-300 shadow-[0_5px_15px_rgba(0,0,0,0.5)] hover:shadow-[0_10px_30px_rgba(0,255,136,0.2)]" onMouseEnter={() => playSound('tone')}>
                  <social.icon className="w-5 h-5 md:w-6 md:h-6 text-white/70 group-hover:text-[#00ff88] transition-colors" />
                  <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-[10px] tracking-widest text-[#00ff88] transition-opacity whitespace-nowrap">{social.name}</div>
                </a>
