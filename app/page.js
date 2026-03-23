@@ -823,9 +823,9 @@ Keep it edgy, professional, and strictly formatted.`;
             {/* SECTION 1: HERO */}
             <section className="h-screen flex flex-col items-center justify-center relative px-6 md:px-12 w-full overflow-hidden">
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10 blur-[3px] select-none pointer-events-none">
-                {/* Changed width size to 22vw so INNOVATE forcefully spans more and overflows nicely */}
-                <span className="text-[22vw] font-black leading-[0.8] tracking-widest whitespace-nowrap text-[#444] pl-[0.1em]">BUILD</span>
-                <span className="text-[22vw] font-black leading-[0.8] tracking-widest whitespace-nowrap text-[#444] pl-[0.1em]">INNOVATE</span>
+                {/* Reduced font size from 19vw to 17vw */}
+                <span className="text-[17vw] font-black leading-[1.4] tracking-[0.28em] whitespace-nowrap text-[#444] pl-[0.28em]">BUILD</span>
+                <span className="text-[17vw] font-black leading-[1.4] tracking-[0.28em] whitespace-nowrap text-[#444] pl-[0.28em]">INNOVATE</span>
               </div>
               
               <div className="z-10 flex flex-col items-center text-center">
