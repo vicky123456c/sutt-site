@@ -1,10 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Terminal, Code2, Cpu, Shield, Users, ChevronDown, 
-  Volume2, VolumeX, ArrowRight, ExternalLink, Sparkles, Loader2, Zap, Vote, BookOpen, GraduationCap, Lightbulb,
-  Twitter, Github, Linkedin, Instagram, Mail, MessageSquare
-} from 'lucide-react';
+import * as Icons from "lucide-react";
 
 // --- CUSTOM LOGO COMPONENT ---
 const SuttLogo = ({ className = "w-12 h-12", animated = false, hoverable = false }) => (
