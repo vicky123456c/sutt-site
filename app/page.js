@@ -119,7 +119,6 @@ const DxBallGame = () => {
 
     const mouseMoveHandler = (e) => {
       const rect = canvas.getBoundingClientRect();
-      // Calculate scale to map screen pixels to internal canvas pixels
       const scaleX = canvas.width / rect.width;
       const relativeX = (e.clientX - rect.left) * scaleX;
       
@@ -319,9 +318,8 @@ export default function App() {
   // Smart Recruitment State
   const [recruitmentStep, setRecruitmentStep] = useState(0);
   const [recruitmentName, setRecruitmentName] = useState('');
-  const [mcqAnswer, setMcqAnswer] = useState('');
-  const [userScore, setUserScore] = useState(0);
-  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [q1Answer, setQ1Answer] = useState('');
+  const [q2Answer, setQ2Answer] = useState('');
 
   // AI Feature State
   const [campusProblem, setCampusProblem] = useState('');
@@ -332,6 +330,13 @@ export default function App() {
   // AI Additional Interactive States
   const [aiIdeaSaved, setAiIdeaSaved] = useState(false);
   const [aiIdeaVoted, setAiIdeaVoted] = useState(false);
+
+  // Demo Pipeline Ideas State
+  const [demoIdeas, setDemoIdeas] = useState([
+    { id: 1, title: "Campus Thrift Exchange", desc: "A localized marketplace for students to buy/sell books and dorm essentials securely.", votes: 342, userVoted: false },
+    { id: 2, title: "Lost & Found Bot", desc: "Automated Telegram bot that matches found items with lost reports using AI image recognition.", votes: 215, userVoted: true },
+    { id: 3, title: "Library Seat Tracker", desc: "Real-time heat map of available seats in the main library using WiFi AP density analytics.", votes: 189, userVoted: false }
+  ]);
 
   // Terminal Feature State
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
@@ -354,48 +359,15 @@ export default function App() {
   const ctaButtonRef = useRef(null);
   const audioCtxRef = useRef(null);
 
-  // --- LOCALSTORAGE LEADERBOARD ENGINE ---
-  // Safely handles storage without requiring Firebase npm dependencies during build
-  useEffect(() => {
-    const fetchLeaderboard = () => {
-      const stored = localStorage.getItem('sutt_leaderboard');
-      if (stored) {
-        setLeaderboardData(JSON.parse(stored));
-      } else {
-        // Initialize with some dummy competitor data to make it look alive
-        const initialData = [
-          { name: "Trinity", score: 100, timestamp: Date.now() - 100000 },
-          { name: "Morpheus", score: 100, timestamp: Date.now() - 500000 },
-          { name: "Cypher", score: 0, timestamp: Date.now() - 800000 }
-        ];
-        localStorage.setItem('sutt_leaderboard', JSON.stringify(initialData));
-        setLeaderboardData(initialData);
+  // --- HANDLERS ---
+  const handleVote = (id) => {
+    setDemoIdeas(ideas => ideas.map(idea => {
+      if (idea.id === id) {
+        return { ...idea, votes: idea.userVoted ? idea.votes - 1 : idea.votes + 1, userVoted: !idea.userVoted };
       }
-    };
-    fetchLeaderboard();
-  }, [recruitmentStep]);
-
-  const submitRecruitmentAnswer = () => {
-    const isCorrect = mcqAnswer === 'O(log n)';
-    const finalScore = isCorrect ? 100 : 0;
-    setUserScore(finalScore);
-    setRecruitmentStep(2);
-    playSound(isCorrect ? 'tone' : 'glitch');
-
-    // Save to LocalStorage
-    const newEntry = {
-      name: recruitmentName || 'Anonymous',
-      score: finalScore,
-      timestamp: Date.now(),
-      isCurrentUser: true // Flag to highlight this entry
-    };
-
-    const currentLeaderboard = JSON.parse(localStorage.getItem('sutt_leaderboard') || '[]');
-    const updatedLeaderboard = [...currentLeaderboard, newEntry]
-      .sort((a, b) => b.score - a.score || a.timestamp - b.timestamp);
-    
-    localStorage.setItem('sutt_leaderboard', JSON.stringify(updatedLeaderboard));
-    setLeaderboardData(updatedLeaderboard);
+      return idea;
+    }));
+    playSound('tone');
   };
 
   // --- AUDIO SYSTEM ---
@@ -1024,7 +996,7 @@ Keep it edgy, professional, and strictly formatted.`;
         .glitch-target { position: relative; display: inline-block; }
         .btn-glitch:hover .glitch-target::before, .btn-glitch:hover .glitch-target::after {
           content: attr(data-text); position: absolute; top: 0; opacity: 1; pointer-events: none;
-          background: #050505; /* Masks the original text during glitch */
+          background: transparent;
         }
         .btn-glitch:hover .glitch-target::before {
           left: -4px; color: #00ff88; text-shadow: 2px 0 #00ff88; z-index: 10;
@@ -1136,12 +1108,10 @@ Keep it edgy, professional, and strictly formatted.`;
         <div 
           className="font-bold text-lg tracking-widest flex items-center gap-4 cursor-pointer"
           onClick={() => { 
-            if (currentPage === 'recruitment' || currentPage === 'game') {
-              window.location.reload();
-            } else {
-              window.scrollTo(0,0); 
-              playSound('tone'); 
-            }
+            setCurrentPage('home'); 
+            setRecruitmentStep(0); // Reset the recruitment form state
+            window.scrollTo(0,0); 
+            playSound('tone'); 
           }}
         >
           <SuttLogo className="w-8 h-8" hoverable={true} />
@@ -1198,7 +1168,7 @@ Keep it edgy, professional, and strictly formatted.`;
         {currentPage === 'game' ? (
            <section className="pt-32 px-6 md:px-12 w-full max-w-[1000px] mx-auto min-h-screen flex flex-col items-center pb-16">
               <div className="gsap-recruitment-reveal mb-8 w-full">
-                <button onClick={() => setCurrentPage('home')} className="text-white/50 hover:text-[#00ff88] text-sm tracking-widest flex items-center gap-2 transition-colors group">
+                <button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); playSound('tone'); }} className="text-white/50 hover:text-[#00ff88] text-sm tracking-widest flex items-center gap-2 transition-colors group">
                    <ArrowRight className="w-4 h-4 rotate-180 transform group-hover:-translate-x-1 transition-transform" /> TERMINATE SIMULATION
                 </button>
               </div>
@@ -1212,7 +1182,7 @@ Keep it edgy, professional, and strictly formatted.`;
           <section className="pt-32 px-6 md:px-12 w-full max-w-[1000px] mx-auto min-h-screen flex flex-col pb-16">
              <div className="gsap-recruitment-reveal mb-12 mt-10">
                 <button
-                   onClick={() => window.location.reload()}
+                   onClick={() => { setCurrentPage('home'); setRecruitmentStep(0); window.scrollTo(0,0); playSound('tone'); }}
                    className="text-white/50 hover:text-[#00ff88] text-sm tracking-widest flex items-center gap-2 transition-colors group"
                 >
                    <ArrowRight className="w-4 h-4 rotate-180 transform group-hover:-translate-x-1 transition-transform" /> TERMINATE UPLINK (BACK)
@@ -1290,6 +1260,7 @@ Keep it edgy, professional, and strictly formatted.`;
                   </>
                 )}
 
+                {/* --- FUNNY RECRUITMENT FLOW --- */}
                 {recruitmentStep === 1 && (
                    <div className="animate-[fadeIn_0.5s_ease-out] flex flex-col gap-6">
                       <div className="bg-[#00ff88]/10 border border-[#00ff88]/30 rounded-2xl p-6 text-center">
@@ -1298,13 +1269,13 @@ Keep it edgy, professional, and strictly formatted.`;
                       </div>
 
                       <div className="bg-[#050505] border border-white/10 rounded-2xl p-8 shadow-inner">
-                         <h4 className="text-lg font-bold text-white mb-6">Q: What is the average time complexity of a search operation in a perfectly balanced Binary Search Tree?</h4>
+                         <h4 className="text-lg font-bold text-white mb-6">Q1: Who was Ash Ketchum's first Pokémon?</h4>
                          <div className="flex flex-col gap-4">
-                            {['O(1)', 'O(n)', 'O(log n)', 'O(n log n)'].map(opt => (
+                            {['Bulbasaur', 'Charmander', 'Squirtle', 'Pikachu'].map(opt => (
                                <div 
                                  key={opt}
-                                 onClick={() => { setMcqAnswer(opt); playSound('tone'); }}
-                                 className={`p-5 rounded-xl border cursor-pointer transition-all duration-200 ${mcqAnswer === opt ? 'border-[#00ff88] bg-[#00ff88]/10 text-[#00ff88] font-bold shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10 hover:border-white/30 text-white/70 hover:text-white hover:bg-white/5'}`}
+                                 onClick={() => { setQ1Answer(opt); playSound('tone'); }}
+                                 className={`p-5 rounded-xl border cursor-pointer transition-all duration-200 ${q1Answer === opt ? 'border-[#00ff88] bg-[#00ff88]/10 text-[#00ff88] font-bold shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10 hover:border-white/30 text-white/70 hover:text-white hover:bg-white/5'}`}
                                >
                                   <span className="font-mono">{opt}</span>
                                </div>
@@ -1313,48 +1284,62 @@ Keep it edgy, professional, and strictly formatted.`;
                       </div>
 
                       <button 
-                        disabled={!mcqAnswer}
-                        onClick={submitRecruitmentAnswer}
+                        disabled={!q1Answer}
+                        onClick={() => setRecruitmentStep(2)}
                         className="w-full mt-4 bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] hover:bg-[#00ff88] hover:text-black py-6 rounded-2xl font-bold tracking-[0.3em] text-sm uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onMouseEnter={() => { if(mcqAnswer) playSound('glitch'); }}
+                        onMouseEnter={() => { if(q1Answer) playSound('glitch'); }}
+                      >
+                        NEXT QUESTION
+                      </button>
+                   </div>
+                )}
+
+                {recruitmentStep === 2 && (
+                   <div className="animate-[fadeIn_0.5s_ease-out] flex flex-col gap-6">
+                      <div className="bg-[#050505] border border-white/10 rounded-2xl p-8 shadow-inner">
+                         <h4 className="text-lg font-bold text-white mb-6 leading-relaxed">Q2: Given a quantum super-position of an unsorted array, what is the exact spacetime complexity of finding the optimal Hamiltonian path using BogoSort?</h4>
+                         <div className="flex flex-col gap-4">
+                            {['O(1) because multiverse', 'O(n!)', 'O(WTF)', 'O(n^n^n)'].map(opt => (
+                               <div 
+                                 key={opt}
+                                 onClick={() => { setQ2Answer(opt); playSound('tone'); }}
+                                 className={`p-5 rounded-xl border cursor-pointer transition-all duration-200 ${q2Answer === opt ? 'border-[#00ff88] bg-[#00ff88]/10 text-[#00ff88] font-bold shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10 hover:border-white/30 text-white/70 hover:text-white hover:bg-white/5'}`}
+                               >
+                                  <span className="font-mono">{opt}</span>
+                               </div>
+                            ))}
+                         </div>
+                      </div>
+
+                      <button 
+                        disabled={!q2Answer}
+                        onClick={() => { playSound('glitch'); setRecruitmentStep(3); }}
+                        className="w-full mt-4 bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] hover:bg-[#00ff88] hover:text-black py-6 rounded-2xl font-bold tracking-[0.3em] text-sm uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         EVALUATE RESPONSE
                       </button>
                    </div>
                 )}
 
-                {recruitmentStep === 2 && (
-                   <div className="animate-[fadeIn_0.5s_ease-out] flex flex-col gap-8">
-                      <div className="text-center py-6">
-                         {userScore > 0 ? (
-                            <CheckCircle2 className="w-20 h-20 text-[#00ff88] mx-auto mb-6 drop-shadow-[0_0_15px_rgba(0,255,136,0.5)]" />
-                         ) : (
-                            <XCircle className="w-20 h-20 text-[#E3242B] mx-auto mb-6 drop-shadow-[0_0_15px_rgba(227,36,43,0.5)]" />
-                         )}
-                         <h3 className="text-4xl font-black tracking-widest mb-4 text-white">SCORE: <span className={userScore > 0 ? 'text-[#00ff88]' : 'text-[#E3242B]'}>{userScore}</span></h3>
-                         <p className="text-white/60 text-lg">{userScore > 0 ? 'Excellent. You are in the top percentile.' : 'Assessment failed. Better luck next deployment.'}</p>
-                      </div>
-
-                      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8">
-                         <h4 className="flex items-center gap-3 text-[#00ff88] font-bold tracking-widest mb-6 border-b border-white/5 pb-4">
-                            <Trophy className="w-5 h-5" /> GLOBAL LEADERBOARD
-                         </h4>
-                         <div className="flex flex-col gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                            {leaderboardData.length > 0 ? leaderboardData.slice(0, 10).map((entry, idx) => (
-                               <div key={idx} className={`flex justify-between items-center p-4 rounded-xl border ${entry.isCurrentUser && entry.timestamp > Date.now() - 5000 ? 'bg-[#00ff88]/10 border-[#00ff88]/30 shadow-[0_0_10px_rgba(0,255,136,0.2)]' : 'bg-[#050505] border-white/5'}`}>
-                                  <div className="flex items-center gap-4">
-                                     <span className="text-white/30 font-mono font-bold w-6">{idx + 1}.</span>
-                                     <span className="text-white/90 font-bold tracking-wider">{entry.name}</span>
-                                  </div>
-                                  <span className={`font-mono font-bold ${entry.score > 0 ? 'text-[#00ff88]' : 'text-white/30'}`}>{entry.score} PTS</span>
-                               </div>
-                            )) : (
-                               <div className="text-center text-white/30 py-8 text-sm tracking-widest">AWAITING MAINFRAME DATA...</div>
-                            )}
-                         </div>
-                      </div>
+                {recruitmentStep === 3 && (
+                   <div className="animate-[fadeIn_0.5s_ease-out] flex flex-col gap-8 text-center py-10">
+                      <Sparkles className="w-24 h-24 text-[#00ff88] mx-auto mb-4 drop-shadow-[0_0_15px_rgba(0,255,136,0.5)] animate-bounce" />
+                      <h3 className="text-4xl md:text-5xl font-black tracking-widest mb-4 text-white">JUST KIDDING.</h3>
+                      <p className="text-white/60 text-lg max-w-md mx-auto leading-relaxed">
+                        We don't ask those kinds of questions here. 
+                        <br/><br/>
+                        Check your inbox for details regarding Round 1 recruitments. See you on the other side.
+                      </p>
+                      <button 
+                         onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); playSound('tone'); }}
+                         className="mx-auto mt-8 border border-[#00ff88]/50 text-[#00ff88] px-8 py-4 rounded-full text-xs hover:bg-[#00ff88] hover:text-black transition-all tracking-widest font-bold shadow-[0_0_15px_rgba(0,255,136,0.2)]"
+                         onMouseEnter={() => playSound('glitch')}
+                      >
+                         RETURN TO MAINFRAME
+                      </button>
                    </div>
                 )}
+
              </div>
           </section>
         ) : (
@@ -1367,14 +1352,21 @@ Keep it edgy, professional, and strictly formatted.`;
               </div>
               
               <div className="z-10 flex flex-col items-center text-center">
+                {/* --- SUTT LOGO TO GAMEPAD GLITCH --- */}
                 <div 
-                  className="mb-10 p-2 cursor-pointer hover:scale-110 transition-all duration-300 relative z-50 group flex flex-col items-center"
+                  className="mb-10 p-2 cursor-pointer relative z-50 group flex flex-col items-center justify-center w-24 h-24"
                   onClick={() => { setCurrentPage('game'); window.scrollTo(0,0); playSound('glitch'); }}
                 >
-                  <SuttLogo className="w-20 h-20" hoverable={true} />
-                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center">
-                    <Gamepad2 className="w-6 h-6 text-[#00ff88] animate-bounce" />
-                    <span className="text-[#00ff88] text-[9px] tracking-[0.3em] font-bold whitespace-nowrap mt-1 drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]">ARCADE MODE</span>
+                  {/* Default SUTT Logo (Hides on hover) */}
+                  <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 group-hover:opacity-0 group-hover:scale-75">
+                    <SuttLogo className="w-20 h-20" />
+                  </div>
+                  {/* Gamepad Icon (Appears on hover) */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:scale-110">
+                    <Gamepad2 className="w-12 h-12 text-[#00ff88] animate-pulse drop-shadow-[0_0_15px_rgba(0,255,136,0.8)]" />
+                    <span className="text-[#00ff88] text-[9px] tracking-[0.3em] font-bold whitespace-nowrap mt-2 drop-shadow-[0_0_10px_rgba(0,255,136,0.8)] btn-glitch">
+                      <span className="glitch-target" data-text="ARCADE">ARCADE</span>
+                    </span>
                   </div>
                 </div>
                 
@@ -1812,6 +1804,29 @@ Keep it edgy, professional, and strictly formatted.`;
                       </div>
                     )}
                   </div>
+                  
+                  {/* --- NEW DEMO SUGGESTIONS (COMMUNITY PIPELINE) --- */}
+                  <div className="mt-16 border-t border-white/10 pt-12">
+                     <h4 className="text-center text-xs tracking-[0.3em] text-[#00ff88] mb-8 font-bold flex items-center justify-center gap-2">
+                        <Activity className="w-4 h-4" /> COMMUNITY PIPELINE
+                     </h4>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {demoIdeas.map(idea => (
+                           <div key={idea.id} className="bg-[#050505] border border-white/5 rounded-2xl p-6 hover:border-[#00ff88]/30 transition-colors flex flex-col h-full group shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                              <h5 className="font-bold text-white mb-2 group-hover:text-[#00ff88] transition-colors">{idea.title}</h5>
+                              <p className="text-white/50 text-xs leading-relaxed mb-6 flex-1">{idea.desc}</p>
+                              <button 
+                                onClick={() => handleVote(idea.id)}
+                                className={`flex items-center justify-center gap-2 text-xs font-bold tracking-widest px-4 py-2 rounded-lg transition-all w-max ${idea.userVoted ? 'bg-[#00ff88]/20 text-[#00ff88] border border-[#00ff88]/50 shadow-[0_0_10px_rgba(0,255,136,0.2)]' : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white'}`}
+                              >
+                                <ThumbsUp className={`w-3 h-3 ${idea.userVoted ? 'fill-current' : ''}`} /> 
+                                {idea.votes}
+                              </button>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+
                 </div>
               </div>
             </section>
