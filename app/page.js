@@ -1,10 +1,18 @@
 "use client";
+"use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Terminal, Code2, Cpu, Shield, Users, ChevronDown, 
   Volume2, VolumeX, ArrowRight, ExternalLink, Sparkles, Loader2, Zap, Vote, BookOpen, GraduationCap, Lightbulb,
-  
+  Mail, MessageSquare
 } from 'lucide-react';
+
+// --- CUSTOM SOCIAL ICONS ---
+// (Lucide-react removed brand icons, so we use custom inline SVGs for them)
+const Github = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.5-1.4 6.5-7.1a5.8 5.8 0 0 0-1.6-3.9 5.7 5.7 0 0 0 .16-3.9s-1.3-.4-4 1.4a13.2 13.2 0 0 0-7 0c-2.7-1.8-4-1.4-4-1.4a5.7 5.7 0 0 0 .16 3.9 5.8 5.8 0 0 0-1.6 3.9c0 5.7 3.35 6.75 6.5 7.1a4.8 4.8 0 0 0-1 3.02v4"/><path d="M9 20c-5 1.5-5-2.5-7-3"/></svg>);
+const Linkedin = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>);
+const Twitter = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>);
+const Instagram = (props) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>);
 
 // --- CUSTOM LOGO COMPONENT ---
 const SuttLogo = ({ className = "w-12 h-12", animated = false, hoverable = false }) => (
@@ -779,10 +787,10 @@ Keep it edgy, professional, and strictly formatted.`;
         ) : (
           <>
             {/* SECTION 1: HERO */}
-            <section className="h-screen flex flex-col items-center justify-center relative px-6 md:px-12 w-full">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] text-center font-black text-[20vw] leading-[0.85] tracking-widest opacity-5 blur-sm select-none pointer-events-none flex flex-col">
-                <span>BUILD</span>
-                <span>INNOVATE</span>
+            <section className="h-screen flex flex-col items-center justify-center relative px-6 md:px-12 w-full overflow-hidden">
+              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10 blur-[3px] select-none pointer-events-none">
+                <span className="text-[25vw] font-black leading-[0.8] tracking-widest whitespace-nowrap text-[#444]">BUILD</span>
+                <span className="text-[25vw] font-black leading-[0.8] tracking-widest whitespace-nowrap text-[#444]">INNOVATE</span>
               </div>
               
               <div className="z-10 flex flex-col items-center text-center">
@@ -794,7 +802,7 @@ Keep it edgy, professional, and strictly formatted.`;
                   className="text-7xl md:text-9xl lg:text-[11rem] font-black tracking-widest mb-6 text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50"
                   style={{ 
                     fontFamily: "'Orbitron', sans-serif",
-                    filter: 'drop-shadow(0px 15px 15px rgba(0,0,0,0.8)) drop-shadow(0px 4px 4px rgba(0,0,0,0.5))' 
+                    filter: 'drop-shadow(0px 25px 35px rgba(0,0,0,1)) drop-shadow(0px 0px 30px rgba(0,255,136,0.15))' 
                   }}
                 >
                   SUTT
@@ -996,8 +1004,10 @@ Keep it edgy, professional, and strictly formatted.`;
 
               {/* SECTION 5.1: WHY SHOULD YOU JOIN US - DYNAMIC ROADMAP TIMELINE */}
               <section className="pt-0 pb-10 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
-                <div className="relative max-w-4xl mx-auto pt-20">
-                   {/* Reference element replacing the old HTML background line. Used strictly for mapping coordinates safely. */}
+                <div className="relative max-w-4xl mx-auto pt-20 pb-10">
+                   {/* Reference element replacing the old HTML background line. Used strictly for mapping coordinates safely.
+                       This container explicitly excludes the CTA button below so the line stops right above it.
+                   */}
                    <div ref={timelineBgRef} className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] opacity-0 pointer-events-none md:-translate-x-1/2"></div>
                    
                    {/* Timeline Nodes */}
@@ -1087,7 +1097,7 @@ Keep it edgy, professional, and strictly formatted.`;
             </section>
 
             {/* SECTION 7: REVIEWS */}
-            <section className="pt-20 pb-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
+            <section className="pt-32 pb-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
                <div className="gsap-reveal mb-12 text-center md:text-left">
                 <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">04 // COMMUNITY FEEDBACK</h2>
                 <h3 className="text-4xl font-light">Campus <span className="font-bold">Testimonials</span></h3>
