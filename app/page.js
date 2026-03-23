@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Terminal, Code2, Cpu, Shield, Users, ChevronDown, 
-  Volume2, VolumeX, ArrowRight, ExternalLink, Sparkles, Loader2, Zap, Vote, BookOpen, GraduationCap, Lightbulb
+  Volume2, VolumeX, ArrowRight, ExternalLink, Sparkles, Loader2, Zap, Vote, BookOpen, GraduationCap, Lightbulb,
+  Twitter, Github, Linkedin, Instagram, Mail, MessageSquare
 } from 'lucide-react';
 
 // --- CUSTOM LOGO COMPONENT ---
@@ -61,6 +62,7 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [curveData, setCurveData] = useState({ curve: "", combined: "", strokeWidth: 6 });
+  const [currentPage, setCurrentPage] = useState('home');
   
   // AI Feature State
   const [campusProblem, setCampusProblem] = useState('');
@@ -77,6 +79,7 @@ export default function App() {
   const timelineRef = useRef(null);
   const timelineBgRef = useRef(null);
   const combinedPathRef = useRef(null);
+  const ctaButtonRef = useRef(null);
   const audioCtxRef = useRef(null);
 
   // --- AUDIO SYSTEM ---
@@ -218,19 +221,22 @@ Keep it edgy, professional, and strictly formatted.`;
 
   // --- DYNAMIC CURVE CALCULATION ---
   const updateCurve = useCallback(() => {
-    if (!roadmapWrapperRef.current || !qMarkRef.current || !timelineBgRef.current) return;
+    if (currentPage !== 'home' || !roadmapWrapperRef.current || !qMarkRef.current || !timelineBgRef.current) return;
     
     // Get absolute screen coordinates for our anchor points
     const wrapperRect = roadmapWrapperRef.current.getBoundingClientRect();
     const qRect = qMarkRef.current.getBoundingClientRect();
     const tBgRect = timelineBgRef.current.getBoundingClientRect();
+    const ctaRect = ctaButtonRef.current?.getBoundingClientRect();
 
     // Map screen coordinates relative to our SVG wrapper
     const startX = qRect.left + (qRect.width / 2) - wrapperRect.left;
     const startY = qRect.bottom - wrapperRect.top;
     const endX = tBgRect.left + (tBgRect.width / 2) - wrapperRect.left;
     const endY = tBgRect.top - wrapperRect.top;
-    const bottomY = tBgRect.bottom - wrapperRect.top;
+    
+    // Line ends exactly 10px above the CTA button
+    const bottomY = ctaRect ? ctaRect.top - wrapperRect.top - 10 : tBgRect.bottom - wrapperRect.top;
 
     // Create a smooth S-curve connecting the tail of the "?" directly to the top of the timeline
     const cp1X = startX;
@@ -246,7 +252,7 @@ Keep it edgy, professional, and strictly formatted.`;
       combined,
       strokeWidth: 6
     });
-  }, []);
+  }, [currentPage]);
 
   useEffect(() => {
     if (loading) return;
@@ -254,7 +260,7 @@ Keep it edgy, professional, and strictly formatted.`;
     window.addEventListener('resize', updateCurve);
     setTimeout(updateCurve, 500); // Recalculate after fonts render
     return () => window.removeEventListener('resize', updateCurve);
-  }, [updateCurve, loading]);
+  }, [updateCurve, loading, currentPage]);
 
 
   // --- INITIALIZATION & LOADING SCREEN LOGIC ---
@@ -415,87 +421,113 @@ Keep it edgy, professional, and strictly formatted.`;
     const ScrollTrigger = window.ScrollTrigger;
     gsap.registerPlugin(ScrollTrigger);
 
-    gsap.utils.toArray('.gsap-reveal').forEach((elem) => {
-      gsap.fromTo(elem, 
-        { y: 40, opacity: 0 },
-        { 
-          y: 0, 
-          opacity: 1, 
-          duration: 1.2, 
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: elem,
-            start: "top 85%",
+    if (currentPage === 'home') {
+      gsap.utils.toArray('.gsap-reveal').forEach((elem) => {
+        gsap.fromTo(elem, 
+          { y: 40, opacity: 0 },
+          { 
+            y: 0, 
+            opacity: 1, 
+            duration: 1.2, 
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: elem,
+              start: "top 85%",
+            }
           }
-        }
-      );
-    });
+        );
+      });
 
-    // Original Restored "We Don't Just Write Code" Typing Effect - Dull Grey
-    if (typeTextRef.current) {
-      const chars = typeTextRef.current.querySelectorAll('.char');
-      gsap.fromTo(chars, 
-        { color: '#222222', opacity: 0.05 }, // Decreased initial opacity and brightness
-        {
-          color: '#aaaaaa', // Increased final brightness to be more visible
-          opacity: 1,
-          stagger: 0.1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: typeTextRef.current,
-            start: "top 80%",
-            end: "center 50%", // Now finishes exactly when reaching the middle of the screen
-            scrub: 0.5,
+      // Original Restored "We Don't Just Write Code" Typing Effect - Dull Grey
+      if (typeTextRef.current) {
+        const chars = typeTextRef.current.querySelectorAll('.char');
+        gsap.fromTo(chars, 
+          { color: '#222222', opacity: 0.05 }, // Decreased initial opacity and brightness
+          {
+            color: '#aaaaaa', // Increased final brightness to be more visible
+            opacity: 1,
+            stagger: 0.1,
+            ease: "none",
+            scrollTrigger: {
+              trigger: typeTextRef.current,
+              start: "top 80%",
+              end: "center 50%", // Now finishes exactly when reaching the middle of the screen
+              scrub: 0.5,
+            }
           }
-        }
-      );
+        );
+      }
+
+      // "WHY SHOULD YOU JOIN US?" Typing Effect
+      if (joinUsRef.current) {
+        const chars = joinUsRef.current.querySelectorAll('.char');
+        gsap.fromTo(chars, 
+          { opacity: 0.05 },
+          {
+            opacity: 1,
+            stagger: 0.1,
+            ease: "none",
+            scrollTrigger: {
+              trigger: joinUsRef.current,
+              start: "top 80%",
+              end: "center 50%",
+              scrub: 0.5,
+            }
+          }
+        );
+      }
+
+      // Dynamic Timeline Dots Lighting Up
+      gsap.utils.toArray('.timeline-dot').forEach((dot) => {
+        gsap.fromTo(dot, 
+          { backgroundColor: '#050505', borderColor: 'rgba(255,255,255,0.2)', boxShadow: 'none' },
+          {
+            backgroundColor: '#00ff88',
+            borderColor: '#00ff88',
+            boxShadow: '0 0 15px rgba(0,255,136,0.6)',
+            duration: 0.3,
+            scrollTrigger: {
+              trigger: dot,
+              start: "top 55%",
+              toggleActions: "play none none reverse"
+            }
+          }
+        );
+      });
+      
+      gsap.utils.toArray('.roadmap-node').forEach((elem) => {
+        gsap.fromTo(elem, 
+          { y: 50, opacity: 0 },
+          { 
+            y: 0, 
+            opacity: 1, 
+            duration: 0.8, 
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: elem,
+              start: "top 80%",
+            }
+          }
+        );
+      });
+
+    } else if (currentPage === 'recruitment') {
+      gsap.utils.toArray('.gsap-recruitment-reveal').forEach((elem, i) => {
+        gsap.fromTo(elem,
+          { y: 40, opacity: 0 },
+          { y: 0, opacity: 1, duration: 1, delay: i * 0.15, ease: "power3.out" }
+        );
+      });
     }
-
-    // "WHY SHOULD YOU JOIN US?" Typing Effect
-    if (joinUsRef.current) {
-      const chars = joinUsRef.current.querySelectorAll('.char');
-      gsap.fromTo(chars, 
-        { opacity: 0.05 },
-        {
-          opacity: 1,
-          stagger: 0.1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: joinUsRef.current,
-            start: "top 80%",
-            end: "center 50%",
-            scrub: 0.5,
-          }
-        }
-      );
-    }
-
-    // Dynamic Timeline Dots Lighting Up
-    gsap.utils.toArray('.timeline-dot').forEach((dot) => {
-      gsap.fromTo(dot, 
-        { backgroundColor: '#050505', borderColor: 'rgba(255,255,255,0.2)', boxShadow: 'none' },
-        {
-          backgroundColor: '#00ff88',
-          borderColor: '#00ff88',
-          boxShadow: '0 0 15px rgba(0,255,136,0.6)',
-          duration: 0.3,
-          scrollTrigger: {
-            trigger: dot,
-            start: "top 55%",
-            toggleActions: "play none none reverse"
-          }
-        }
-      );
-    });
 
     return () => {
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
-  }, [libsLoaded, loading]);
+  }, [libsLoaded, loading, currentPage]);
 
   // Handle SVG Curve Animation safely after coordinates map
   useEffect(() => {
-    if (loading || !libsLoaded || !window.gsap || !curveData.combined || !combinedPathRef.current) return;
+    if (loading || !libsLoaded || !window.gsap || !curveData.combined || !combinedPathRef.current || currentPage !== 'home') return;
     const gsap = window.gsap;
     
     // We measure the total path to perfectly sequence the drawing phase
@@ -510,8 +542,8 @@ Keep it edgy, professional, and strictly formatted.`;
       scrollTrigger: {
         trigger: joinUsRef.current,
         start: "center center",          // Start tracing when '?' is in the middle
-        endTrigger: timelineRef.current,
-        end: "bottom 80%",               // Finish tracing just before the end of the timeline
+        endTrigger: ctaButtonRef.current || timelineRef.current,
+        end: ctaButtonRef.current ? "top 60%" : "bottom 80%", // Finishes exactly when the button reaches 60% height
         scrub: true
       }
     });
@@ -520,7 +552,7 @@ Keep it edgy, professional, and strictly formatted.`;
       if (unifiedAnim.scrollTrigger) unifiedAnim.scrollTrigger.kill();
       unifiedAnim.kill();
     }
-  }, [curveData.combined, libsLoaded, loading]);
+  }, [curveData.combined, libsLoaded, loading, currentPage]);
 
   // --- 3D TILT HANDLERS ---
   const handleTilt = (e) => {
@@ -644,7 +676,17 @@ Keep it edgy, professional, and strictly formatted.`;
 
       {/* --- GLASS HEADER --- */}
       <nav className="fixed top-0 w-full z-50 p-6 flex justify-between items-center bg-[#050505]/60 backdrop-blur-xl border-b border-white/5">
-        <div className="font-bold text-lg tracking-widest flex items-center gap-4">
+        <div 
+          className="font-bold text-lg tracking-widest flex items-center gap-4 cursor-pointer"
+          onClick={() => { 
+            if (currentPage === 'recruitment') {
+              window.location.reload();
+            } else {
+              window.scrollTo(0,0); 
+              playSound('tone'); 
+            }
+          }}
+        >
           <SuttLogo className="w-8 h-8" hoverable={true} />
           <span style={{ fontFamily: "'Orbitron', sans-serif" }}>SUTT</span>
         </div>
@@ -655,458 +697,556 @@ Keep it edgy, professional, and strictly formatted.`;
           >
             {soundEnabled ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
           </button>
-          <a href="#projects" className="hidden md:block hover:text-white transition-colors btn-glitch" onMouseEnter={() => playSound('glitch')}>
-            <span className="glitch-target" data-text="PROJECTS">PROJECTS</span>
-          </a>
-          <a href="#team" className="hidden md:block hover:text-white transition-colors btn-glitch" onMouseEnter={() => playSound('glitch')}>
-            <span className="glitch-target" data-text="TEAM">TEAM</span>
-          </a>
-          <button 
-            className="btn-glitch border border-white/20 px-6 py-2 rounded-full hover:border-[#00ff88] hover:text-[#00ff88] transition-colors bg-white/5"
-            onMouseEnter={() => playSound('glitch')}
-          >
-            <span className="glitch-target" data-text="CONTACT">CONTACT</span>
-          </button>
+          {currentPage === 'home' && (
+            <>
+              <a href="#projects" className="hidden md:block hover:text-white transition-colors btn-glitch" onMouseEnter={() => playSound('glitch')}>
+                <span className="glitch-target" data-text="PROJECTS">PROJECTS</span>
+              </a>
+              <a href="#team" className="hidden md:block hover:text-white transition-colors btn-glitch" onMouseEnter={() => playSound('glitch')}>
+                <span className="glitch-target" data-text="TEAM">TEAM</span>
+              </a>
+              <button 
+                onClick={() => {
+                  const contactEl = document.getElementById('contact');
+                  if (contactEl) contactEl.scrollIntoView({ behavior: 'smooth' });
+                  playSound('tone');
+                }}
+                className="btn-glitch border border-white/20 px-6 py-2 rounded-full hover:border-[#00ff88] hover:text-[#00ff88] transition-colors bg-white/5"
+                onMouseEnter={() => playSound('glitch')}
+              >
+                <span className="glitch-target" data-text="CONTACT">CONTACT</span>
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
       {/* --- MAIN CONTENT --- */}
-      <main className="relative z-10 w-full flex flex-col gap-24 md:gap-32 pb-32">
-        
-        {/* SECTION 1: HERO */}
-        <section className="h-screen flex flex-col items-center justify-center relative px-6 md:px-12 w-full">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] text-center font-black text-[20vw] leading-[0.85] tracking-widest opacity-5 blur-sm select-none pointer-events-none flex flex-col">
-            <span>BUILD</span>
-            <span>INNOVATE</span>
-          </div>
-          
-          <div className="z-10 flex flex-col items-center text-center">
-            <div className="mb-10 p-2">
-              <SuttLogo className="w-20 h-20" hoverable={true} />
-            </div>
-            
-            <h1 
-              className="text-7xl md:text-9xl lg:text-[11rem] font-black tracking-widest mb-6 text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50"
-              style={{ 
-                fontFamily: "'Orbitron', sans-serif",
-                filter: 'drop-shadow(0px 15px 15px rgba(0,0,0,0.8)) drop-shadow(0px 4px 4px rgba(0,0,0,0.5))' 
-              }}
-            >
-              SUTT
-            </h1>
-            
-            <p className="text-lg text-white/80 max-w-xl mx-auto mb-10 font-medium">
-              We are the technical backbone of the Student Union. Designing, developing, and deploying platforms that empower thousands.
-            </p>
-          </div>
-
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30 animate-bounce">
-            <span className="text-[10px] tracking-widest">SCROLL</span>
-            <ChevronDown className="w-4 h-4" />
-          </div>
-        </section>
-
-        {/* SECTION 2: SCROLL TYPING (INTRO) */}
-        {/* User request: Bring back the original version where it's just plain text wrapping naturally, and colored dull grey */}
-        <section className="min-h-screen flex items-center justify-center text-center px-6 md:px-12 w-full">
-          <h2 
-            ref={typeTextRef}
-            className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl flex flex-wrap justify-center gap-x-[0.25em]"
-          >
-            {"WE DON'T JUST WRITE CODE. WE ARCHITECT THE CAMPUS EXPERIENCE.".split(' ').map((word, i) => (
-              <span key={i} className="inline-block whitespace-nowrap">
-                {word.split('').map((char, j) => (
-                  <span key={j} className="char inline-block text-[#333]">{char}</span>
-                ))}
-              </span>
-            ))}
-          </h2>
-        </section>
-
-        {/* SECTION 3: IMMERSIVE PROJECTS */}
-        <section id="projects" className="pt-20 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
-          <div className="gsap-reveal mb-12 text-center md:text-left">
-            <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">01 // OPEN SOURCE DEPLOYS</h2>
-            <h3 className="text-4xl font-light"><span className="font-bold">Our Projects</span></h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {[
-              { 
-                title: "Campus Nav API", tags: ["Go", "Mapbox", "Redis"], 
-                desc: "Real-time routing engine handling 5k requests/min for the official university app.",
-                img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80"
-              },
-              { 
-                title: "SU Voting Platform", tags: ["Next.js", "Web3 Auth"], 
-                desc: "Cryptographically secure election portal replacing legacy paper systems.",
-                img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
-              },
-              { 
-                title: "Event Ticketing Node", tags: ["Node.js", "PostgreSQL"], 
-                desc: "High-throughput microservice for instantaneous campus concert booking.",
-                img: "https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?auto=format&fit=crop&w=800&q=80"
-              },
-              { 
-                title: "Room Booking UI", tags: ["React", "Tailwind"], 
-                desc: "Fluid, state-driven interface integrating with the legacy library database.",
-                img: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
-              }
-            ].map((proj, i) => {
-              return (
-                <div 
-                  key={i} 
-                  className="gsap-reveal tilt-card group relative h-[400px] rounded-2xl overflow-hidden bg-[#0a0a0a] border border-white/5 cursor-pointer shadow-lg"
-                  onMouseMove={handleTilt}
-                  onMouseLeave={resetTilt}
-                  onMouseEnter={() => playSound('tone')}
+      <main className="relative z-10 w-full flex flex-col gap-24 md:gap-32 pb-0">
+        {currentPage === 'recruitment' ? (
+          <section className="pt-32 px-6 md:px-12 w-full max-w-[1000px] mx-auto min-h-screen flex flex-col pb-16">
+             <div className="gsap-recruitment-reveal mb-12 mt-10">
+                <button
+                   onClick={() => window.location.reload()}
+                   className="text-white/50 hover:text-[#00ff88] text-sm tracking-widest flex items-center gap-2 transition-colors group"
                 >
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-110 opacity-40 group-hover:opacity-10"
-                    style={{ backgroundImage: `url(${proj.img})` }}
-                  ></div>
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent"></div>
-                  
-                  <div className="tilt-card-content absolute inset-0 p-8 flex flex-col justify-end transition-all duration-500">
-                    <div className="transform group-hover:-translate-y-[140px] transition-transform duration-500 ease-out">
-                      <h4 className="text-3xl font-bold text-white group-hover:text-[#00ff88] transition-colors">{proj.title}</h4>
-                    </div>
-
-                    <div className="absolute bottom-8 left-8 right-8 opacity-0 translate-y-8 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 ease-out delay-100 flex flex-col gap-4">
-                      <p className="text-sm text-white/80 leading-relaxed max-w-sm">{proj.desc}</p>
-                      <div className="flex gap-2">
-                        {proj.tags.map((tag, j) => (
-                          <span key={j} className="text-[10px] tracking-wider px-2 py-1 bg-[#050505]/80 border border-white/10 rounded">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="absolute top-8 right-8 w-10 h-10 rounded-full border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500 bg-[#050505]/50 backdrop-blur-md">
-                      <ExternalLink className="w-4 h-4 text-[#00ff88]" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* SECTION 4: DOMAINS / VERTICALS - Single Row Vertical Rectangles */}
-        <section className="pt-20 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
-          <div className="gsap-reveal mb-12 text-center md:text-left">
-            <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">02 // TECHNICAL DOMAINS</h2>
-            <h3 className="text-4xl font-light">Where We <span className="font-bold">Operate</span></h3>
-          </div>
-          
-          {/* Changed to lg:grid-cols-4 for a single row on desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 relative z-10">
-            {[
-              { Icon: Code2, title: "Web Architecture", desc: "Building highly scalable, distributed microservices and robust user portals." },
-              { Icon: Cpu, title: "Native Mobile", desc: "Developing intuitive, high-performance iOS and Android applications." },
-              { Icon: Shield, title: "Cybersecurity", desc: "Ensuring strict data integrity, pentesting, and robust security protocols." },
-              { Icon: Users, title: "UI / UX Design", desc: "Crafting seamless, accessible, and highly engaging user experiences." }
-            ].map((v, i) => {
-              const Icon = v.Icon;
-              return (
-                <div 
-                  key={i} 
-                  // Added flex flex-col and h-[420px] to enforce a vertical rectangular shape
-                  className="gsap-reveal bg-[#0a0a0a] border border-white/10 p-8 rounded-3xl transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer flex flex-col h-[420px]"
-                  onMouseEnter={() => playSound('glitch')}
-                >
-                  <div className="mb-auto">
-                    <Icon className="w-12 h-12 text-[#00ff88] mb-8 opacity-70" strokeWidth={1.5} />
-                    <h4 className="text-2xl font-bold mb-4 leading-tight">{v.title}</h4>
-                  </div>
-                  <p className="text-white/60 leading-relaxed mt-4">{v.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* UNIFIED ROADMAP WRAPPER FOR PERFECT CURVE MAPPING */}
-        <div className="relative w-full" ref={roadmapWrapperRef}>
-          
-          {/* Dynamic Single SVG connecting "?" to the bottom of the Timeline */}
-          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
-             <defs>
-               <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-                 <feGaussianBlur stdDeviation="8" result="blur" />
-                 <feMerge>
-                   <feMergeNode in="blur" />
-                   <feMergeNode in="SourceGraphic" />
-                 </feMerge>
-               </filter>
-             </defs>
-
-             {/* Background Curve Track */}
-             <path 
-                d={curveData.combined} 
-                fill="none" 
-                stroke="rgba(255,255,255,0.1)" 
-                strokeWidth={curveData.strokeWidth} 
-                strokeLinecap="round"
-                strokeLinejoin="round"
-             />
-             
-             {/* Foreground Animated Curve - ONE single path meaning ZERO joints or overlaps! */}
-             <path 
-                ref={combinedPathRef} 
-                d={curveData.combined} 
-                fill="none" 
-                stroke="#00ff88" 
-                strokeWidth={curveData.strokeWidth} 
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                filter="url(#neonGlow)"
-             />
-          </svg>
-
-          {/* SECTION 5: WHY SHOULD YOU JOIN US - TYPING HEADER */}
-          <section className="min-h-screen flex items-center justify-center text-center pb-0 px-6 md:px-12 w-full relative z-20">
-            <h2 
-              ref={joinUsRef}
-              className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl flex flex-wrap justify-center gap-x-[0.25em]"
-            >
-              {"WHY SHOULD YOU JOIN US".split(' ').map((word, i) => (
-                <span key={i} className="inline-block whitespace-nowrap">
-                  {word.split('').map((char, j) => (
-                    <span key={`char-${i}-${j}`} className="char inline-block text-white opacity-0">{char}</span>
-                  ))}
-                </span>
-              ))}
-              <span className="inline-block whitespace-nowrap">
-                <span 
-                  ref={qMarkRef}
-                  className="char inline-block opacity-0 text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]"
-                >
-                  ?
-                </span>
-              </span>
-            </h2>
-          </section>
-
-          {/* SECTION 5.1: WHY SHOULD YOU JOIN US - DYNAMIC ROADMAP TIMELINE */}
-          <section className="pt-0 pb-10 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
-            <div className="relative max-w-4xl mx-auto pt-20">
-               {/* Reference element replacing the old HTML background line. Used strictly for mapping coordinates safely. */}
-               <div ref={timelineBgRef} className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] opacity-0 pointer-events-none md:-translate-x-1/2"></div>
-               
-               {/* Timeline Nodes */}
-               {[
-                 { title: "Real-World Scale", text: "Move beyond sandbox projects. Build, deploy, and scale enterprise-grade applications that thousands of students rely on daily." },
-                 { title: "Elite Mentorship", text: "Operate like a top-tier tech agency. Experience rigorous code reviews, agile workflows, and CI/CD pipelines guided by senior architects." },
-                 { title: "Modern Tech Stack", text: "No legacy boilerplate. We engineer solutions using bleeding-edge tools like React, Next.js, Go, Docker, and AWS." },
-                 { title: "Zero to One Ownership", text: "Don't just fix bugs. Pitch ideas, design architectures, and take complete ownership of products from ideation to deployment." },
-                 { title: "Campus Impact", text: "Solve the exact problems you and your friends face. Your code will tangibly improve the daily university experience for everyone." },
-                 { title: "The Alumni Network", text: "Join a tight-knit collective. Our alumni network spans top tech giants, providing unparalleled mentorship, mock interviews, and direct referrals." }
-               ].map((r, i) => (
-                 <div key={i} className="relative flex items-center justify-end md:justify-between md:odd:flex-row-reverse group mb-12 roadmap-node">
-                    {/* Dynamic Connector Dot (Sized perfectly over the 6px line) */}
-                    <div className="timeline-dot absolute left-6 md:left-1/2 w-4 h-4 rounded-full -translate-x-1/2 z-20 transition-colors duration-300"></div>
-                    
-                    {/* Content Card */}
-                    <div className="w-[calc(100%-3rem)] md:w-[45%]">
-                       <div 
-                          className="bg-[#0a0a0a] border border-white/5 p-6 md:p-8 rounded-2xl hover:border-[#00ff88]/40 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(0,255,136,0.15)]"
-                          onMouseEnter={() => playSound('glitch')}
-                       >
-                          <h4 className="text-xl md:text-2xl font-bold text-[#00ff88] mb-3" style={{ fontFamily: "'Orbitron', sans-serif" }}>{r.title}</h4>
-                          <p className="text-white/60 text-sm md:text-base leading-relaxed">{r.text}</p>
-                       </div>
-                    </div>
-                 </div>
-               ))}
-            </div>
-          </section>
-        </div>
-
-        {/* SECTION 6: THE TEAM */}
-        <section id="team" className="pt-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
-          <div className="gsap-reveal mb-12 text-center md:text-left flex justify-between items-end">
-             <div>
-               <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">03 // THE ARCHITECTS</h2>
-               <h3 className="text-4xl font-light">Meet the <span className="font-bold">Core Team</span></h3>
+                   <ArrowRight className="w-4 h-4 rotate-180 transform group-hover:-translate-x-1 transition-transform" /> TERMINATE UPLINK (BACK)
+                </button>
              </div>
-             <button 
-                className="btn-glitch hidden md:flex items-center gap-2 text-xs tracking-widest border-b border-white/20 pb-1 hover:text-[#00ff88] hover:border-[#00ff88] transition-colors"
-                onMouseEnter={() => playSound('glitch')}
-             >
-                <span className="glitch-target" data-text="VIEW FULL ROSTER">VIEW FULL ROSTER</span> <ArrowRight className="w-3 h-3" />
-             </button>
-          </div>
+             
+             <div className="gsap-recruitment-reveal bg-[#0a0a0a] border border-[#00ff88]/30 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_rgba(0,255,136,0.1)] relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[#00ff88]/50 to-transparent"></div>
+                
+                <h2 className="text-3xl md:text-5xl font-black text-[#00ff88] mb-4" style={{ fontFamily: "'Orbitron', sans-serif" }}>RECRUITMENT_PROTOCOL</h2>
+                <p className="text-white/60 mb-12 leading-relaxed">Enter your credentials to initiate the application process. Only the most ambitious architects need apply.</p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { name: 'Alex Chen', role: 'Lead Developer', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80' },
-              { name: 'Samantha Lee', role: 'UI/UX Lead', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
-              { name: 'Jordan Davis', role: 'Systems Architect', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
-              { name: 'Priya Sharma', role: 'Security Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80' }
-            ].map((member, i) => (
-              <div 
-                key={i} 
-                className="gsap-reveal group relative cursor-pointer"
-                onMouseEnter={() => playSound('tone')}
-              >
-                <div className="aspect-[4/5] rounded-2xl bg-[#0a0a0a] border border-white/5 overflow-hidden relative grayscale group-hover:grayscale-0 transition-all duration-700 shadow-lg">
-                   <img 
-                     src={member.img} 
-                     alt="Team member" 
-                     className="w-full h-full object-cover mix-blend-luminosity opacity-40 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
-                   />
-                   <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90"></div>
-                   
-                   <div className="absolute bottom-6 left-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                      <div className="font-bold text-lg mb-1">{member.name}</div>
-                      <div className="text-[10px] tracking-widest text-[#00ff88]">{member.role}</div>
-                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* SECTION 7: REVIEWS */}
-        <section className="pt-20 pb-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
-           <div className="gsap-reveal mb-12 text-center md:text-left">
-            <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">04 // COMMUNITY FEEDBACK</h2>
-            <h3 className="text-4xl font-light">Campus <span className="font-bold">Testimonials</span></h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { quote: "The new voting portal handled 10,000 concurrent users without a single dropped connection. Incredible engineering.", author: "Elections Commissioner", Icon: Vote },
-              { quote: "Their UI/UX team completely transformed how students interact with the library booking system.", author: "Head Librarian", Icon: BookOpen },
-              { quote: "A dedicated group of developers who operate like a professional agency right here on campus.", author: "Dean of Students", Icon: GraduationCap }
-            ].map((review, i) => {
-              const Icon = review.Icon;
-              return (
-                <div key={i} className="gsap-reveal bg-[#0a0a0a] border border-white/5 p-8 rounded-2xl relative hover:border-[#00ff88]/30 transition-colors shadow-lg">
-                  <div className="text-6xl text-[#00ff88]/20 absolute top-4 left-4 font-serif">"</div>
-                  <p className="relative z-10 text-sm leading-relaxed mb-8 opacity-70 mt-4">"{review.quote}"</p>
-                  <div className="flex items-center gap-3 border-t border-white/5 pt-6">
-                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                       <Icon className="w-4 h-4 text-[#00ff88]" />
-                    </div>
-                    <span className="font-bold text-[10px] uppercase tracking-widest text-white/80">{review.author}</span>
+                <form className="flex flex-col gap-8" onSubmit={(e) => { e.preventDefault(); playSound('tone'); }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div>
+                       <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">ID_STRING (FULL NAME)</label>
+                       <input type="text" placeholder="e.g. Neo" className="w-full bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors" />
+                     </div>
+                     <div>
+                       <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">COMM_LINK (EMAIL)</label>
+                       <input type="email" placeholder="neo@matrix.edu" className="w-full bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors" />
+                     </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </section>
+                  
+                  <div>
+                     <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">PRIMARY_DOMAIN (ROLE)</label>
+                     <select className="w-full bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors appearance-none cursor-pointer">
+                        <option>Web Architecture (Frontend/Backend)</option>
+                        <option>Native Mobile (iOS/Android)</option>
+                        <option>UI / UX Design</option>
+                        <option>Cybersecurity / DevOps</option>
+                     </select>
+                  </div>
 
-        {/* SECTION 8: WHAT SHOULD WE BUILD NEXT (GEMINI API) */}
-        <section id="ai" className="pt-10 pb-10 relative z-10 px-6 md:px-12 max-w-[1000px] w-full mx-auto">
-          <div className="w-full">
-            <div className="gsap-reveal bg-[#0a0a0a] border border-white/5 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_rgba(0,255,136,0.03)] relative overflow-hidden">
+                  <div>
+                     <label className="text-xs tracking-widest text-[#00ff88] mb-3 block">MOTIVATION_MATRIX (WHY SUTT?)</label>
+                     <textarea placeholder="Tell us about your drive to build..." className="w-full h-40 bg-[#050505] border border-white/10 p-5 rounded-2xl text-white focus:border-[#00ff88]/50 outline-none transition-colors resize-none leading-relaxed"></textarea>
+                  </div>
+
+                  <button 
+                    className="w-full mt-4 bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] hover:bg-[#00ff88] hover:text-black py-6 rounded-2xl font-bold tracking-[0.3em] text-sm uppercase transition-all duration-300 shadow-[0_0_20px_rgba(0,255,136,0.1)] hover:shadow-[0_0_40px_rgba(0,255,136,0.3)]"
+                    onMouseEnter={() => playSound('glitch')}
+                  >
+                    TRANSMIT APPLICATION
+                  </button>
+                </form>
+             </div>
+          </section>
+        ) : (
+          <>
+            {/* SECTION 1: HERO */}
+            <section className="h-screen flex flex-col items-center justify-center relative px-6 md:px-12 w-full">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] text-center font-black text-[20vw] leading-[0.85] tracking-widest opacity-5 blur-sm select-none pointer-events-none flex flex-col">
+                <span>BUILD</span>
+                <span>INNOVATE</span>
+              </div>
               
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[#00ff88]/30 to-transparent"></div>
-
-              <div className="text-center mb-10">
-                <h3 className="text-4xl font-light">What Should We <span className="font-bold">Build Next?</span></h3>
-                <p className="text-white/40 text-sm mt-4 max-w-xl mx-auto leading-relaxed">
-                  Got an idea that could revolutionize campus life? Pitch your concept below, and our system will generate a professional project blueprint.
+              <div className="z-10 flex flex-col items-center text-center">
+                <div className="mb-10 p-2">
+                  <SuttLogo className="w-20 h-20" hoverable={true} />
+                </div>
+                
+                <h1 
+                  className="text-7xl md:text-9xl lg:text-[11rem] font-black tracking-widest mb-6 text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50"
+                  style={{ 
+                    fontFamily: "'Orbitron', sans-serif",
+                    filter: 'drop-shadow(0px 15px 15px rgba(0,0,0,0.8)) drop-shadow(0px 4px 4px rgba(0,0,0,0.5))' 
+                  }}
+                >
+                  SUTT
+                </h1>
+                
+                <p className="text-lg text-white/80 max-w-xl mx-auto mb-10 font-medium">
+                  We are the technical backbone of the Student Union. Designing, developing, and deploying platforms that empower thousands.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-6">
-                {!aiResponse ? (
-                  <>
-                    <div className="relative group">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00ff88]/20 to-[#00b8ff]/20 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-500"></div>
-                      <textarea 
-                        value={campusProblem}
-                        onChange={(e) => setCampusProblem(e.target.value)}
-                        placeholder="e.g., An automated class schedule optimizer that syncs directly with Google Calendar..."
-                        className="relative w-full h-40 bg-[#050505] border border-white/10 rounded-2xl p-6 text-white placeholder:text-white/20 focus:outline-none focus:border-[#00ff88]/50 transition-colors resize-none text-sm leading-relaxed"
-                      />
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30 animate-bounce">
+                <span className="text-[10px] tracking-widest">SCROLL</span>
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </section>
+
+            {/* SECTION 2: SCROLL TYPING (INTRO) */}
+            <section className="min-h-screen flex items-center justify-center text-center px-6 md:px-12 w-full">
+              <h2 
+                ref={typeTextRef}
+                className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl flex flex-wrap justify-center gap-x-[0.25em]"
+              >
+                {"WE DON'T JUST WRITE CODE. WE ARCHITECT THE CAMPUS EXPERIENCE.".split(' ').map((word, i) => (
+                  <span key={i} className="inline-block whitespace-nowrap">
+                    {word.split('').map((char, j) => (
+                      <span key={j} className="char inline-block text-[#333]">{char}</span>
+                    ))}
+                  </span>
+                ))}
+              </h2>
+            </section>
+
+            {/* SECTION 3: IMMERSIVE PROJECTS */}
+            <section id="projects" className="pt-20 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
+              <div className="gsap-reveal mb-12 text-center md:text-left">
+                <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">01 // OPEN SOURCE DEPLOYS</h2>
+                <h3 className="text-4xl font-light"><span className="font-bold">Our Projects</span></h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {[
+                  { 
+                    title: "Campus Nav API", tags: ["Go", "Mapbox", "Redis"], 
+                    desc: "Real-time routing engine handling 5k requests/min for the official university app.",
+                    img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80"
+                  },
+                  { 
+                    title: "SU Voting Platform", tags: ["Next.js", "Web3 Auth"], 
+                    desc: "Cryptographically secure election portal replacing legacy paper systems.",
+                    img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
+                  },
+                  { 
+                    title: "Event Ticketing Node", tags: ["Node.js", "PostgreSQL"], 
+                    desc: "High-throughput microservice for instantaneous campus concert booking.",
+                    img: "https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?auto=format&fit=crop&w=800&q=80"
+                  },
+                  { 
+                    title: "Room Booking UI", tags: ["React", "Tailwind"], 
+                    desc: "Fluid, state-driven interface integrating with the legacy library database.",
+                    img: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
+                  }
+                ].map((proj, i) => {
+                  return (
+                    <div 
+                      key={i} 
+                      className="gsap-reveal tilt-card group relative h-[400px] rounded-2xl overflow-hidden bg-[#0a0a0a] border border-white/5 cursor-pointer shadow-lg"
+                      onMouseMove={handleTilt}
+                      onMouseLeave={resetTilt}
+                      onMouseEnter={() => playSound('tone')}
+                    >
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-110 opacity-40 group-hover:opacity-10"
+                        style={{ backgroundImage: `url(${proj.img})` }}
+                      ></div>
+                      
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent"></div>
+                      
+                      <div className="tilt-card-content absolute inset-0 p-8 flex flex-col justify-end transition-all duration-500">
+                        <div className="transform group-hover:-translate-y-[140px] transition-transform duration-500 ease-out">
+                          <h4 className="text-3xl font-bold text-white group-hover:text-[#00ff88] transition-colors">{proj.title}</h4>
+                        </div>
+
+                        <div className="absolute bottom-8 left-8 right-8 opacity-0 translate-y-8 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 ease-out delay-100 flex flex-col gap-4">
+                          <p className="text-sm text-white/80 leading-relaxed max-w-sm">{proj.desc}</p>
+                          <div className="flex gap-2">
+                            {proj.tags.map((tag, j) => (
+                              <span key={j} className="text-[10px] tracking-wider px-2 py-1 bg-[#050505]/80 border border-white/10 rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="absolute top-8 right-8 w-10 h-10 rounded-full border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500 bg-[#050505]/50 backdrop-blur-md">
+                          <ExternalLink className="w-4 h-4 text-[#00ff88]" />
+                        </div>
+                      </div>
                     </div>
-                    <button 
-                      onClick={generateProjectSpec}
-                      disabled={isGeneratingAi || !campusProblem.trim()}
-                      className="w-full bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] hover:bg-[#00ff88] hover:text-black disabled:opacity-50 disabled:cursor-not-allowed py-5 rounded-2xl font-bold tracking-widest text-sm uppercase flex items-center justify-center gap-3 transition-all duration-300"
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* SECTION 4: DOMAINS / VERTICALS - Single Row Vertical Rectangles */}
+            <section className="pt-20 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
+              <div className="gsap-reveal mb-12 text-center md:text-left">
+                <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">02 // TECHNICAL DOMAINS</h2>
+                <h3 className="text-4xl font-light">Where We <span className="font-bold">Operate</span></h3>
+              </div>
+              
+              {/* Changed to lg:grid-cols-4 for a single row on desktop */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 relative z-10">
+                {[
+                  { Icon: Code2, title: "Web Architecture", desc: "Building highly scalable, distributed microservices and robust user portals." },
+                  { Icon: Cpu, title: "Native Mobile", desc: "Developing intuitive, high-performance iOS and Android applications." },
+                  { Icon: Shield, title: "Cybersecurity", desc: "Ensuring strict data integrity, pentesting, and robust security protocols." },
+                  { Icon: Users, title: "UI / UX Design", desc: "Crafting seamless, accessible, and highly engaging user experiences." }
+                ].map((v, i) => {
+                  const Icon = v.Icon;
+                  return (
+                    <div 
+                      key={i} 
+                      // Added flex flex-col and h-[420px] to enforce a vertical rectangular shape
+                      className="gsap-reveal bg-[#0a0a0a] border border-white/10 p-8 rounded-3xl transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer flex flex-col h-[420px]"
                       onMouseEnter={() => playSound('glitch')}
                     >
-                      {isGeneratingAi ? (
-                        <>PROCESSING <Loader2 className="w-5 h-5 animate-spin" /></>
-                      ) : (
-                        <>SUBMIT MY IDEA ✨</>
-                      )}
-                    </button>
-                    {aiError && <p className="text-red-400 text-center text-xs mt-2">{aiError}</p>}
-                  </>
-                ) : (
-                  <div className="bg-[#050505] border border-[#00ff88]/20 rounded-2xl p-8 animate-[fadeIn_0.5s_ease-out]">
-                    <h4 className="text-[#00ff88] font-bold mb-4 flex items-center gap-2">
-                      <Lightbulb className="w-5 h-5" /> IDEA ACCEPTED. BLUEPRINT GENERATED.
-                    </h4>
-                    <div className="text-white/80 whitespace-pre-wrap leading-loose text-sm">
-                      {aiResponse}
+                      <div className="mb-auto">
+                        <Icon className="w-12 h-12 text-[#00ff88] mb-8 opacity-70" strokeWidth={1.5} />
+                        <h4 className="text-2xl font-bold mb-4 leading-tight">{v.title}</h4>
+                      </div>
+                      <p className="text-white/60 leading-relaxed mt-4">{v.desc}</p>
                     </div>
-                    <button 
-                      onClick={() => { setAiResponse(''); setCampusProblem(''); }}
-                      className="mt-8 border border-white/20 px-6 py-3 rounded-full text-xs hover:bg-white/10 transition-colors tracking-widest"
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* UNIFIED ROADMAP WRAPPER FOR PERFECT CURVE MAPPING */}
+            <div className="relative w-full" ref={roadmapWrapperRef}>
+              
+              {/* Dynamic Single SVG connecting "?" to the bottom of the Timeline */}
+              <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+                 <defs>
+                   <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                     <feGaussianBlur stdDeviation="8" result="blur" />
+                     <feMerge>
+                       <feMergeNode in="blur" />
+                       <feMergeNode in="SourceGraphic" />
+                     </feMerge>
+                   </filter>
+                 </defs>
+
+                 {/* Background Curve Track */}
+                 <path 
+                    d={curveData.combined} 
+                    fill="none" 
+                    stroke="rgba(255,255,255,0.1)" 
+                    strokeWidth={curveData.strokeWidth} 
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                 />
+                 
+                 {/* Foreground Animated Curve - ONE single path meaning ZERO joints or overlaps! */}
+                 <path 
+                    ref={combinedPathRef} 
+                    d={curveData.combined} 
+                    fill="none" 
+                    stroke="#00ff88" 
+                    strokeWidth={curveData.strokeWidth} 
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    filter="url(#neonGlow)"
+                 />
+              </svg>
+
+              {/* SECTION 5: WHY SHOULD YOU JOIN US - TYPING HEADER */}
+              <section className="min-h-screen flex items-center justify-center text-center pb-0 px-6 md:px-12 w-full relative z-20">
+                <h2 
+                  ref={joinUsRef}
+                  className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl flex flex-wrap justify-center gap-x-[0.25em]"
+                >
+                  {"WHY SHOULD YOU JOIN US".split(' ').map((word, i) => (
+                    <span key={i} className="inline-block whitespace-nowrap">
+                      {word.split('').map((char, j) => (
+                        <span key={`char-${i}-${j}`} className="char inline-block text-white opacity-0">{char}</span>
+                      ))}
+                    </span>
+                  ))}
+                  <span className="inline-block whitespace-nowrap">
+                    <span 
+                      ref={qMarkRef}
+                      className="char inline-block opacity-0 text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]"
                     >
-                      SUBMIT ANOTHER
-                    </button>
+                      ?
+                    </span>
+                  </span>
+                </h2>
+              </section>
+
+              {/* SECTION 5.1: WHY SHOULD YOU JOIN US - DYNAMIC ROADMAP TIMELINE */}
+              <section className="pt-0 pb-10 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
+                <div className="relative max-w-4xl mx-auto pt-20">
+                   {/* Reference element replacing the old HTML background line. Used strictly for mapping coordinates safely. */}
+                   <div ref={timelineBgRef} className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] opacity-0 pointer-events-none md:-translate-x-1/2"></div>
+                   
+                   {/* Timeline Nodes */}
+                   {[
+                     { title: "Real-World Scale", text: "Move beyond sandbox projects. Build, deploy, and scale enterprise-grade applications that thousands of students rely on daily." },
+                     { title: "Elite Mentorship", text: "Operate like a top-tier tech agency. Experience rigorous code reviews, agile workflows, and CI/CD pipelines guided by senior architects." },
+                     { title: "Modern Tech Stack", text: "No legacy boilerplate. We engineer solutions using bleeding-edge tools like React, Next.js, Go, Docker, and AWS." },
+                     { title: "Zero to One Ownership", text: "Don't just fix bugs. Pitch ideas, design architectures, and take complete ownership of products from ideation to deployment." },
+                     { title: "Campus Impact", text: "Solve the exact problems you and your friends face. Your code will tangibly improve the daily university experience for everyone." },
+                     { title: "The Alumni Network", text: "Join a tight-knit collective. Our alumni network spans top tech giants, providing unparalleled mentorship, mock interviews, and direct referrals." }
+                   ].map((r, i) => (
+                     <div key={i} className="relative flex items-center justify-end md:justify-between md:odd:flex-row-reverse group mb-12 roadmap-node">
+                        {/* Dynamic Connector Dot (Sized perfectly over the 6px line) */}
+                        <div className="timeline-dot absolute left-6 md:left-1/2 w-4 h-4 rounded-full -translate-x-1/2 z-20 transition-colors duration-300"></div>
+                        
+                        {/* Content Card */}
+                        <div className="w-[calc(100%-3rem)] md:w-[45%]">
+                           <div 
+                              className="bg-[#0a0a0a] border border-white/5 p-6 md:p-8 rounded-2xl hover:border-[#00ff88]/40 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(0,255,136,0.15)]"
+                              onMouseEnter={() => playSound('glitch')}
+                           >
+                              <h4 className="text-xl md:text-2xl font-bold text-[#00ff88] mb-3" style={{ fontFamily: "'Orbitron', sans-serif" }}>{r.title}</h4>
+                              <p className="text-white/60 text-sm md:text-base leading-relaxed">{r.text}</p>
+                           </div>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+              </section>
+
+              {/* SECTION 5.2: RECRUITMENT CTA BUTTON (Outside roadmap node tracking) */}
+              <section className="relative z-20 flex justify-center pb-20 px-6 w-full">
+                 <button
+                   ref={ctaButtonRef}
+                   onClick={() => { setCurrentPage('recruitment'); window.scrollTo(0,0); playSound('glitch'); }}
+                   className="btn-glitch group relative px-12 py-6 bg-[#0a0a0a] border border-[#00ff88]/50 rounded-full overflow-hidden hover:bg-[#00ff88]/10 transition-all duration-300 shadow-[0_0_20px_rgba(0,255,136,0.15)] hover:shadow-[0_0_40px_rgba(0,255,136,0.4)]"
+                   onMouseEnter={() => playSound('tone')}
+                 >
+                   <span className="glitch-target text-[#00ff88] font-bold tracking-[0.3em] text-sm md:text-base uppercase" data-text="SIGN UP FOR RECRUITMENT">SIGN UP FOR RECRUITMENT</span>
+                 </button>
+              </section>
+            </div>
+
+            {/* SECTION 6: THE TEAM */}
+            <section id="team" className="pt-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
+              <div className="gsap-reveal mb-12 text-center md:text-left flex justify-between items-end">
+                 <div>
+                   <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">03 // THE ARCHITECTS</h2>
+                   <h3 className="text-4xl font-light">Meet the <span className="font-bold">Core Team</span></h3>
+                 </div>
+                 <button 
+                    className="btn-glitch hidden md:flex items-center gap-2 text-xs tracking-widest border-b border-white/20 pb-1 hover:text-[#00ff88] hover:border-[#00ff88] transition-colors"
+                    onMouseEnter={() => playSound('glitch')}
+                 >
+                    <span className="glitch-target" data-text="VIEW FULL ROSTER">VIEW FULL ROSTER</span> <ArrowRight className="w-3 h-3" />
+                 </button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {[
+                  { name: 'Alex Chen', role: 'Lead Developer', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80' },
+                  { name: 'Samantha Lee', role: 'UI/UX Lead', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
+                  { name: 'Jordan Davis', role: 'Systems Architect', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
+                  { name: 'Priya Sharma', role: 'Security Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80' }
+                ].map((member, i) => (
+                  <div 
+                    key={i} 
+                    className="gsap-reveal group relative cursor-pointer"
+                    onMouseEnter={() => playSound('tone')}
+                  >
+                    <div className="aspect-[4/5] rounded-2xl bg-[#0a0a0a] border border-white/5 overflow-hidden relative grayscale group-hover:grayscale-0 transition-all duration-700 shadow-lg">
+                       <img 
+                         src={member.img} 
+                         alt="Team member" 
+                         className="w-full h-full object-cover mix-blend-luminosity opacity-40 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
+                       />
+                       <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90"></div>
+                       
+                       <div className="absolute bottom-6 left-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                          <div className="font-bold text-lg mb-1">{member.name}</div>
+                          <div className="text-[10px] tracking-widest text-[#00ff88]">{member.role}</div>
+                       </div>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            </div>
-          </div>
-        </section>
+            </section>
 
-        {/* SECTION 9: TOOLS WE USE & WHO WE WORK WITH (SCROLLING LOGOS) */}
-        <section className="pt-10 overflow-hidden relative z-10 w-full">
-          <div className="relative border-y border-white/10 py-10 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
-            
-            <div className="marquee-container opacity-50 mb-10">
-              <div className="marquee-content-reverse items-center gap-16 px-8 text-2xl font-bold tracking-widest uppercase">
-                <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> REACT</span>
-                <span className="flex items-center gap-4"><Terminal className="w-6 h-6 text-[#00ff88]"/> NODE.JS</span>
-                <span className="flex items-center gap-4"><Cpu className="w-6 h-6 text-[#00ff88]"/> NEXT.JS</span>
-                <span className="flex items-center gap-4"><Shield className="w-6 h-6 text-[#00ff88]"/> TYPESCRIPT</span>
-                <span className="flex items-center gap-4"><Zap className="w-6 h-6 text-[#00ff88]"/> GO</span>
-                <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> DOCKER</span>
-                <span className="flex items-center gap-4"><Terminal className="w-6 h-6 text-[#00ff88]"/> AWS</span>
-                <span className="flex items-center gap-4"><Cpu className="w-6 h-6 text-[#00ff88]"/> POSTGRESQL</span>
-
-                <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> REACT</span>
-                <span className="flex items-center gap-4"><Terminal className="w-6 h-6 text-[#00ff88]"/> NODE.JS</span>
-                <span className="flex items-center gap-4"><Cpu className="w-6 h-6 text-[#00ff88]"/> NEXT.JS</span>
-                <span className="flex items-center gap-4"><Shield className="w-6 h-6 text-[#00ff88]"/> TYPESCRIPT</span>
-                <span className="flex items-center gap-4"><Zap className="w-6 h-6 text-[#00ff88]"/> GO</span>
-                <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> DOCKER</span>
-                <span className="flex items-center gap-4"><Terminal className="w-6 h-6 text-[#00ff88]"/> AWS</span>
-                <span className="flex items-center gap-4"><Cpu className="w-6 h-6 text-[#00ff88]"/> POSTGRESQL</span>
+            {/* SECTION 7: REVIEWS */}
+            <section className="pt-20 pb-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
+               <div className="gsap-reveal mb-12 text-center md:text-left">
+                <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">04 // COMMUNITY FEEDBACK</h2>
+                <h3 className="text-4xl font-light">Campus <span className="font-bold">Testimonials</span></h3>
               </div>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                  { quote: "The new voting portal handled 10,000 concurrent users without a single dropped connection. Incredible engineering.", author: "Elections Commissioner", Icon: Vote },
+                  { quote: "Their UI/UX team completely transformed how students interact with the library booking system.", author: "Head Librarian", Icon: BookOpen },
+                  { quote: "A dedicated group of developers who operate like a professional agency right here on campus.", author: "Dean of Students", Icon: GraduationCap }
+                ].map((review, i) => {
+                  const Icon = review.Icon;
+                  return (
+                    <div key={i} className="gsap-reveal bg-[#0a0a0a] border border-white/5 p-8 rounded-2xl relative hover:border-[#00ff88]/30 transition-colors shadow-lg">
+                      <div className="text-6xl text-[#00ff88]/20 absolute top-4 left-4 font-serif">"</div>
+                      <p className="relative z-10 text-sm leading-relaxed mb-8 opacity-70 mt-4">"{review.quote}"</p>
+                      <div className="flex items-center gap-3 border-t border-white/5 pt-6">
+                        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                           <Icon className="w-4 h-4 text-[#00ff88]" />
+                        </div>
+                        <span className="font-bold text-[10px] uppercase tracking-widest text-white/80">{review.author}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
 
-            <div className="marquee-container opacity-30">
-              <div className="marquee-content items-center gap-16 px-8 text-xl font-bold tracking-widest uppercase">
-                <span>University Admin</span> <span className="text-[#00ff88]">•</span>
-                <span>Computer Science Dept</span> <span className="text-[#00ff88]">•</span>
-                <span>Alumni Association</span> <span className="text-[#00ff88]">•</span>
-                <span>Sports Council</span> <span className="text-[#00ff88]">•</span>
+            {/* SECTION 8: WHAT SHOULD WE BUILD NEXT (GEMINI API) */}
+            <section id="ai" className="pt-10 pb-10 relative z-10 px-6 md:px-12 max-w-[1000px] w-full mx-auto">
+              <div className="w-full">
+                <div className="gsap-reveal bg-[#0a0a0a] border border-white/5 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_rgba(0,255,136,0.03)] relative overflow-hidden">
+                  
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[#00ff88]/30 to-transparent"></div>
+
+                  <div className="text-center mb-10">
+                    <h3 className="text-4xl font-light">What Should We <span className="font-bold">Build Next?</span></h3>
+                    <p className="text-white/40 text-sm mt-4 max-w-xl mx-auto leading-relaxed">
+                      Got an idea that could revolutionize campus life? Pitch your concept below, and our system will generate a professional project blueprint.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-6">
+                    {!aiResponse ? (
+                      <>
+                        <div className="relative group">
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00ff88]/20 to-[#00b8ff]/20 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-500"></div>
+                          <textarea 
+                            value={campusProblem}
+                            onChange={(e) => setCampusProblem(e.target.value)}
+                            placeholder="e.g., An automated class schedule optimizer that syncs directly with Google Calendar..."
+                            className="relative w-full h-40 bg-[#050505] border border-white/10 rounded-2xl p-6 text-white placeholder:text-white/20 focus:outline-none focus:border-[#00ff88]/50 transition-colors resize-none text-sm leading-relaxed"
+                          />
+                        </div>
+                        <button 
+                          onClick={generateProjectSpec}
+                          disabled={isGeneratingAi || !campusProblem.trim()}
+                          className="w-full bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] hover:bg-[#00ff88] hover:text-black disabled:opacity-50 disabled:cursor-not-allowed py-5 rounded-2xl font-bold tracking-widest text-sm uppercase flex items-center justify-center gap-3 transition-all duration-300"
+                          onMouseEnter={() => playSound('glitch')}
+                        >
+                          {isGeneratingAi ? (
+                            <>PROCESSING <Loader2 className="w-5 h-5 animate-spin" /></>
+                          ) : (
+                            <span className="font-bold tracking-widest text-sm uppercase">SUBMIT MY IDEA ✨</span>
+                          )}
+                        </button>
+                        {aiError && <p className="text-red-400 text-center text-xs mt-2">{aiError}</p>}
+                      </>
+                    ) : (
+                      <div className="bg-[#050505] border border-[#00ff88]/20 rounded-2xl p-8 animate-[fadeIn_0.5s_ease-out]">
+                        <h4 className="text-[#00ff88] font-bold mb-4 flex items-center gap-2">
+                          <Lightbulb className="w-5 h-5" /> IDEA ACCEPTED. BLUEPRINT GENERATED.
+                        </h4>
+                        <div className="text-white/80 whitespace-pre-wrap leading-loose text-sm">
+                          {aiResponse}
+                        </div>
+                        <button 
+                          onClick={() => { setAiResponse(''); setCampusProblem(''); }}
+                          className="mt-8 border border-white/20 px-6 py-3 rounded-full text-xs hover:bg-white/10 transition-colors tracking-widest"
+                        >
+                          SUBMIT ANOTHER
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 9: TOOLS WE USE & WHO WE WORK WITH (SCROLLING LOGOS) */}
+            <section className="pt-10 overflow-hidden relative z-10 w-full">
+              <div className="relative border-y border-white/10 py-10 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
                 
-                <span>University Admin</span> <span className="text-[#00ff88]">•</span>
-                <span>Computer Science Dept</span> <span className="text-[#00ff88]">•</span>
-                <span>Alumni Association</span> <span className="text-[#00ff88]">•</span>
-                <span>Sports Council</span> <span className="text-[#00ff88]">•</span>
-              </div>
-            </div>
-          </div>
-        </section>
+                <div className="marquee-container opacity-50 mb-10">
+                  <div className="marquee-content-reverse items-center gap-16 px-8 text-2xl font-bold tracking-widest uppercase">
+                    <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> REACT</span>
+                    <span className="flex items-center gap-4"><Terminal className="w-6 h-6 text-[#00ff88]"/> NODE.JS</span>
+                    <span className="flex items-center gap-4"><Cpu className="w-6 h-6 text-[#00ff88]"/> NEXT.JS</span>
+                    <span className="flex items-center gap-4"><Shield className="w-6 h-6 text-[#00ff88]"/> TYPESCRIPT</span>
+                    <span className="flex items-center gap-4"><Zap className="w-6 h-6 text-[#00ff88]"/> GO</span>
+                    <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> DOCKER</span>
+                    <span className="flex items-center gap-4"><Terminal className="w-6 h-6 text-[#00ff88]"/> AWS</span>
+                    <span className="flex items-center gap-4"><Cpu className="w-6 h-6 text-[#00ff88]"/> POSTGRESQL</span>
 
+                    <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> REACT</span>
+                    <span className="flex items-center gap-4"><Terminal className="w-6 h-6 text-[#00ff88]"/> NODE.JS</span>
+                    <span className="flex items-center gap-4"><Cpu className="w-6 h-6 text-[#00ff88]"/> NEXT.JS</span>
+                    <span className="flex items-center gap-4"><Shield className="w-6 h-6 text-[#00ff88]"/> TYPESCRIPT</span>
+                    <span className="flex items-center gap-4"><Zap className="w-6 h-6 text-[#00ff88]"/> GO</span>
+                    <span className="flex items-center gap-4"><Code2 className="w-6 h-6 text-[#00ff88]"/> DOCKER</span>
+                    <span className="flex items-center gap-4"><Terminal className="w-6 h-6 text-[#00ff88]"/> AWS</span>
+                    <span className="flex items-center gap-4"><Cpu className="w-6 h-6 text-[#00ff88]"/> POSTGRESQL</span>
+                  </div>
+                </div>
+
+                <div className="marquee-container opacity-30">
+                  <div className="marquee-content items-center gap-16 px-8 text-xl font-bold tracking-widest uppercase">
+                    <span>University Admin</span> <span className="text-[#00ff88]">•</span>
+                    <span>Computer Science Dept</span> <span className="text-[#00ff88]">•</span>
+                    <span>Alumni Association</span> <span className="text-[#00ff88]">•</span>
+                    <span>Sports Council</span> <span className="text-[#00ff88]">•</span>
+                    
+                    <span>University Admin</span> <span className="text-[#00ff88]">•</span>
+                    <span>Computer Science Dept</span> <span className="text-[#00ff88]">•</span>
+                    <span>Alumni Association</span> <span className="text-[#00ff88]">•</span>
+                    <span>Sports Council</span> <span className="text-[#00ff88]">•</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </>
+        )}
       </main>
 
-      {/* FOOTER */}
-      <footer className="border-t border-white/5 py-12 text-center bg-[#030303] relative z-10 w-full">
-        <div className="flex flex-col items-center justify-center text-white/30 text-[10px] tracking-widest gap-4">
+      {/* FOOTER (With Socials Integrated) */}
+      <footer id="contact" className="border-t border-white/5 pt-20 pb-12 text-center bg-[#030303] relative z-10 w-full mt-auto">
+        {/* Socials Block */}
+        <div className="gsap-reveal max-w-[1000px] mx-auto px-6 md:px-12 mb-16 text-center">
+           <h2 className="text-xs text-[#00ff88] tracking-[0.4em] mb-4 font-bold">05 // INITIATE COMMS</h2>
+           <h3 className="text-4xl md:text-5xl font-light mb-12">Connect With <span className="font-bold">The Network</span></h3>
+           
+           <div className="flex flex-wrap justify-center gap-6 md:gap-8">
+             {[
+               { icon: Github, name: "GitHub", href: "#" },
+               { icon: Linkedin, name: "LinkedIn", href: "#" },
+               { icon: Twitter, name: "Twitter / X", href: "#" },
+               { icon: Instagram, name: "Instagram", href: "#" },
+               { icon: MessageSquare, name: "Discord", href: "#" },
+               { icon: Mail, name: "Email", href: "#" }
+             ].map((social, i) => (
+               <a key={i} href={social.href} className="group relative w-14 h-14 md:w-16 md:h-16 bg-[#0a0a0a] border border-white/10 rounded-2xl flex items-center justify-center hover:border-[#00ff88]/50 hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-[0_10px_30px_rgba(0,255,136,0.2)]" onMouseEnter={() => playSound('tone')}>
+                 <social.icon className="w-5 h-5 md:w-6 md:h-6 text-white/70 group-hover:text-[#00ff88] transition-colors" />
+                 <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-[10px] tracking-widest text-[#00ff88] transition-opacity whitespace-nowrap">{social.name}</div>
+               </a>
+             ))}
+           </div>
+        </div>
+
+        {/* Copyright Block */}
+        <div className="flex flex-col items-center justify-center text-white/30 text-[10px] tracking-widest gap-4 border-t border-white/5 pt-12">
           <SuttLogo className="w-8 h-8 opacity-40 grayscale" hoverable={true} />
           <p>SYSTEMS OPERATIONAL // © {new Date().getFullYear()} SUTT</p>
         </div>
