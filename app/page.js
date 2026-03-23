@@ -2004,7 +2004,7 @@ Keep it edgy, professional, and strictly formatted.`;
            </div>
         </div>
 
-        {/* Copyright Block */}
+      
         <div className="flex flex-col items-center justify-center text-white/30 text-[10px] tracking-widest gap-4 border-t border-white/5 pt-12">
           <SuttLogo className="w-8 h-8 opacity-40 grayscale" hoverable={true} />
           <p>SYSTEMS OPERATIONAL // © {new Date().getFullYear()} SUTT</p>
