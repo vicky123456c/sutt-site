@@ -66,6 +66,25 @@ const DxBallGame = () => {
   const canvasRef = useRef(null);
   const [gameState, setGameState] = useState('playing'); // playing, won, lost
   const [score, setScore] = useState(0);
+  
+  const gameAudioCtx = useRef(null);
+
+  const playBeep = useCallback((freq, type = 'square', dur = 0.1) => {
+    try {
+      if (!gameAudioCtx.current) gameAudioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+      if (gameAudioCtx.current.state === 'suspended') gameAudioCtx.current.resume();
+      const osc = gameAudioCtx.current.createOscillator();
+      const gain = gameAudioCtx.current.createGain();
+      osc.connect(gain);
+      gain.connect(gameAudioCtx.current.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, gameAudioCtx.current.currentTime);
+      gain.gain.setValueAtTime(0.1, gameAudioCtx.current.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, gameAudioCtx.current.currentTime + dur);
+      osc.start(gameAudioCtx.current.currentTime);
+      osc.stop(gameAudioCtx.current.currentTime + dur);
+    } catch(e) {}
+  }, []);
 
   const initGame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -127,9 +146,23 @@ const DxBallGame = () => {
       }
     };
 
+    const touchHandler = (e) => {
+      e.preventDefault(); // Prevent screen from scrolling while playing on mobile
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const touch = e.touches[0];
+      const relativeX = (touch.clientX - rect.left) * scaleX;
+      
+      if (relativeX > 0 && relativeX < canvas.width) {
+        paddleX = relativeX - paddleWidth / 2;
+      }
+    };
+
     document.addEventListener("keydown", keyDownHandler, false);
     document.addEventListener("keyup", keyUpHandler, false);
     canvas.addEventListener("mousemove", mouseMoveHandler, false);
+    canvas.addEventListener("touchstart", touchHandler, { passive: false });
+    canvas.addEventListener("touchmove", touchHandler, { passive: false });
 
     const drawBall = () => {
       ctx.beginPath();
@@ -169,10 +202,10 @@ const DxBallGame = () => {
     };
 
     const drawHUD = () => {
-      ctx.font = "bold 16px monospace";
+      ctx.font = "bold 20px monospace";
       ctx.fillStyle = "#ffffff";
       ctx.fillText("SCORE: " + currentScore, 20, 30);
-      ctx.fillText("LIVES: " + lives, canvas.width - 100, 30);
+      ctx.fillText("LIVES: " + lives, canvas.width - 120, 30);
     };
 
     const collisionDetection = () => {
@@ -185,9 +218,12 @@ const DxBallGame = () => {
               b.status = 0;
               currentScore++;
               setScore(currentScore);
+              playBeep(880, 'sine', 0.1); // Brick Break Sound
               if (currentScore === brickRowCount * brickColumnCount) {
                 isGameOver = true;
                 setGameState('won');
+                playBeep(600, 'square', 0.1);
+                setTimeout(() => playBeep(800, 'square', 0.3), 150);
               }
             }
           }
@@ -207,19 +243,24 @@ const DxBallGame = () => {
 
       if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
         dx = -dx;
+        playBeep(220, 'sine', 0.1); // Wall bounce
       }
       if (y + dy < ballRadius) {
         dy = -dy;
+        playBeep(220, 'sine', 0.1); // Ceiling bounce
       } else if (y + dy > canvas.height - ballRadius - paddleHeight - 5) {
         if (x > paddleX && x < paddleX + paddleWidth) {
           dy = -dy;
           dx = dx + (x - (paddleX + paddleWidth/2)) * 0.05;
+          playBeep(440, 'square', 0.1); // Paddle bounce
         } else if (y + dy > canvas.height - ballRadius) {
           lives--;
           if (!lives) {
             isGameOver = true;
             setGameState('lost');
+            playBeep(100, 'sawtooth', 0.5); // Game Over
           } else {
+            playBeep(150, 'sawtooth', 0.3); // Life lost
             x = canvas.width / 2;
             y = canvas.height - 40;
             dx = 4;
@@ -250,8 +291,10 @@ const DxBallGame = () => {
       document.removeEventListener("keydown", keyDownHandler);
       document.removeEventListener("keyup", keyUpHandler);
       canvas.removeEventListener("mousemove", mouseMoveHandler);
+      canvas.removeEventListener("touchstart", touchHandler);
+      canvas.removeEventListener("touchmove", touchHandler);
     };
-  }, []);
+  }, [playBeep]);
 
   useEffect(() => {
     if (gameState === 'playing') {
@@ -261,7 +304,7 @@ const DxBallGame = () => {
   }, [gameState, initGame]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-[#0a0a0a] p-4 rounded-3xl border border-[#00ff88]/30 shadow-[0_0_50px_rgba(0,255,136,0.1)] relative">
+    <div className="w-full max-w-3xl mx-auto bg-[#0a0a0a] p-4 md:p-6 rounded-3xl border border-[#00ff88]/30 shadow-[0_0_50px_rgba(0,255,136,0.1)] relative">
       <div className="absolute top-4 left-6 flex items-center gap-2">
          <div className="w-3 h-3 rounded-full bg-[#E3242B]"></div>
          <div className="w-3 h-3 rounded-full bg-[#FDB813]"></div>
@@ -272,13 +315,13 @@ const DxBallGame = () => {
         ref={canvasRef}
         width={800}
         height={600}
-        className={`w-full h-auto bg-[#050505] rounded-xl mt-8 cursor-none transition-opacity duration-300 ${gameState !== 'playing' ? 'opacity-30' : 'opacity-100'}`}
+        className={`max-w-full max-h-[55vh] md:max-h-[60vh] w-auto h-auto aspect-[4/3] bg-[#050505] rounded-xl mt-6 mx-auto cursor-none transition-opacity duration-300 ${gameState !== 'playing' ? 'opacity-30' : 'opacity-100'}`}
         style={{ display: 'block', touchAction: 'none' }}
       />
       
       {gameState !== 'playing' && (
          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 font-mono">
-            <h3 className={`text-5xl font-black mb-4 tracking-widest ${gameState === 'won' ? 'text-[#00ff88]' : 'text-[#E3242B]'}`}>
+            <h3 className={`text-4xl md:text-5xl font-black mb-4 tracking-widest text-center ${gameState === 'won' ? 'text-[#00ff88]' : 'text-[#E3242B]'}`}>
               {gameState === 'won' ? 'SYSTEM SECURED' : 'SYSTEM FAILURE'}
             </h3>
             <p className="text-white/70 mb-8 text-lg">FINAL SCORE: <span className="text-white font-bold">{score}</span></p>
@@ -1269,16 +1312,18 @@ Keep it edgy, professional, and strictly formatted.`;
            </section>
 
         ) : currentPage === 'game' ? (
-           <section className="pt-32 px-6 md:px-12 w-full max-w-[1000px] mx-auto min-h-screen flex flex-col items-center pb-16">
-              <div className="gsap-recruitment-reveal mb-8 w-full">
-                <button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); playSound('tone'); }} className="text-white/50 hover:text-[#00ff88] text-sm tracking-widest flex items-center gap-2 transition-colors group">
+           <section className="h-[100dvh] pt-24 px-4 md:px-12 w-full max-w-[1000px] mx-auto flex flex-col pb-6 overflow-hidden">
+              <div className="gsap-recruitment-reveal mb-4 w-full flex-shrink-0">
+                <button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); playSound('tone'); }} className="text-white/50 hover:text-[#E3242B] text-sm tracking-widest flex items-center gap-2 transition-colors group">
                    <ArrowRight className="w-4 h-4 rotate-180 transform group-hover:-translate-x-1 transition-transform" /> TERMINATE SIMULATION
                 </button>
               </div>
-              <div className="text-[#00ff88] font-bold text-2xl mb-4 tracking-widest uppercase flex items-center gap-4">
-                 <TerminalSquare className="w-6 h-6 animate-pulse" /> SUTT // DX_BALL ENGINE
+              <div className="text-[#00ff88] font-bold text-xl md:text-2xl mb-4 tracking-widest uppercase flex items-center gap-4 flex-shrink-0">
+                 <TerminalSquare className="w-5 h-5 md:w-6 md:h-6 animate-pulse" /> SUTT // DX_BALL ENGINE
               </div>
-              <DxBallGame />
+              <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+                 <DxBallGame />
+              </div>
            </section>
 
         ) : currentPage === 'recruitment' ? (
