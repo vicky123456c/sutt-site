@@ -1,4 +1,3 @@
-"use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Terminal, Code2, Cpu, Shield, Users, ChevronDown, 
@@ -60,6 +59,7 @@ export default function App() {
   const [libsLoaded, setLibsLoaded] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [curveData, setCurveData] = useState({ d: "", strokeWidth: 6 });
   
   // AI Feature State
   const [campusProblem, setCampusProblem] = useState('');
@@ -71,6 +71,8 @@ export default function App() {
   const matrixCanvasRef = useRef(null);
   const typeTextRef = useRef(null);
   const joinUsRef = useRef(null);
+  const roadmapWrapperRef = useRef(null);
+  const qMarkRef = useRef(null);
   const timelineRef = useRef(null);
   const timelineCurveRef = useRef(null);
   const timelineLineRef = useRef(null);
@@ -212,6 +214,42 @@ Keep it edgy, professional, and strictly formatted.`;
       setIsGeneratingAi(false);
     }
   };
+
+  // --- DYNAMIC CURVE CALCULATION ---
+  const updateCurve = useCallback(() => {
+    if (!roadmapWrapperRef.current || !qMarkRef.current || !timelineLineRef.current) return;
+    
+    // Get absolute screen coordinates for our anchor points
+    const wrapperRect = roadmapWrapperRef.current.getBoundingClientRect();
+    const qRect = qMarkRef.current.getBoundingClientRect();
+    const tRect = timelineLineRef.current.getBoundingClientRect();
+
+    // Map screen coordinates relative to our SVG wrapper
+    const startX = qRect.left + (qRect.width / 2) - wrapperRect.left;
+    const startY = qRect.bottom - wrapperRect.top;
+    const endX = tRect.left + (tRect.width / 2) - wrapperRect.left;
+    const endY = tRect.top - wrapperRect.top;
+
+    // Create a smooth S-curve connecting the tail of the "?" directly to the top of the timeline
+    const cp1X = startX;
+    const cp1Y = startY + (endY - startY) / 2;
+    const cp2X = endX;
+    const cp2Y = startY + (endY - startY) / 2;
+
+    setCurveData({
+      d: `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
+      strokeWidth: 6 // Match timeline line width
+    });
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    updateCurve();
+    window.addEventListener('resize', updateCurve);
+    setTimeout(updateCurve, 500); // Recalculate after fonts render
+    return () => window.removeEventListener('resize', updateCurve);
+  }, [updateCurve, loading]);
+
 
   // --- INITIALIZATION & LOADING SCREEN LOGIC ---
   useEffect(() => {
@@ -387,13 +425,14 @@ Keep it edgy, professional, and strictly formatted.`;
       );
     });
 
-    // Intro Typing Effect
+    // Original Restored "We Don't Just Write Code" Typing Effect - Dull Grey
     if (typeTextRef.current) {
       const chars = typeTextRef.current.querySelectorAll('.char');
       gsap.fromTo(chars, 
-        { color: 'rgba(255, 255, 255, 0.1)' },
+        { color: '#333333', opacity: 0.2 },
         {
-          color: 'rgba(255, 255, 255, 0.9)',
+          color: '#888888', // Dull tech grey
+          opacity: 1,
           stagger: 0.1,
           ease: "none",
           scrollTrigger: {
@@ -425,23 +464,7 @@ Keep it edgy, professional, and strictly formatted.`;
       );
     }
 
-    // Dynamic Timeline Curve Connection
-    if (timelineCurveRef.current) {
-      const pathLength = timelineCurveRef.current.getTotalLength();
-      gsap.set(timelineCurveRef.current, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
-      gsap.to(timelineCurveRef.current, {
-        strokeDashoffset: 0,
-        ease: "none",
-        scrollTrigger: {
-          trigger: joinUsRef.current,
-          start: "center center",
-          end: "bottom 20%",
-          scrub: true
-        }
-      });
-    }
-
-    // Dynamic Timeline Line Growth (Continues after curve)
+    // Dynamic Timeline Line Growth
     if (timelineRef.current && timelineLineRef.current) {
       gsap.fromTo(timelineLineRef.current,
         { scaleY: 0 },
@@ -480,6 +503,31 @@ Keep it edgy, professional, and strictly formatted.`;
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
   }, [libsLoaded, loading]);
+
+  // Handle SVG Curve Animation safely after coordinates map
+  useEffect(() => {
+    if (loading || !libsLoaded || !window.gsap || !curveData.d || !timelineCurveRef.current) return;
+    const gsap = window.gsap;
+    
+    const pathLength = timelineCurveRef.current.getTotalLength();
+    gsap.set(timelineCurveRef.current, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
+    
+    const curveAnim = gsap.to(timelineCurveRef.current, {
+      strokeDashoffset: 0,
+      ease: "none",
+      scrollTrigger: {
+        trigger: joinUsRef.current,
+        start: "center center",
+        end: "bottom 20%",
+        scrub: true
+      }
+    });
+
+    return () => {
+      if (curveAnim.scrollTrigger) curveAnim.scrollTrigger.kill();
+      curveAnim.kill();
+    }
+  }, [curveData.d, libsLoaded, loading]);
 
   // --- 3D TILT HANDLERS ---
   const handleTilt = (e) => {
@@ -666,15 +714,16 @@ Keep it edgy, professional, and strictly formatted.`;
         </section>
 
         {/* SECTION 2: SCROLL TYPING (INTRO) */}
+        {/* User request: Bring back the original version where it's just plain text wrapping naturally, and colored dull grey */}
         <section className="min-h-screen flex items-center justify-center text-center px-6 md:px-12 w-full">
           <h2 
             ref={typeTextRef}
-            className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-5xl flex flex-wrap justify-center gap-x-[0.25em]"
+            className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl flex flex-wrap justify-center gap-x-[0.25em]"
           >
             {"WE DON'T JUST WRITE CODE. WE ARCHITECT THE CAMPUS EXPERIENCE.".split(' ').map((word, i) => (
               <span key={i} className="inline-block whitespace-nowrap">
                 {word.split('').map((char, j) => (
-                  <span key={j} className="char inline-block" style={{color: 'rgba(255,255,255,0.1)'}}>{char}</span>
+                  <span key={j} className="char inline-block text-[#333]">{char}</span>
                 ))}
               </span>
             ))}
@@ -698,7 +747,7 @@ Keep it edgy, professional, and strictly formatted.`;
               { 
                 title: "SU Voting Platform", tags: ["Next.js", "Web3 Auth"], 
                 desc: "Cryptographically secure election portal replacing legacy paper systems.",
-                img: "https://images.unsplash.com/photo-1639762681485-074b7f4ec651?auto=format&fit=crop&w=800&q=80"
+                img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
               },
               { 
                 title: "Event Ticketing Node", tags: ["Node.js", "PostgreSQL"], 
@@ -752,14 +801,15 @@ Keep it edgy, professional, and strictly formatted.`;
           </div>
         </section>
 
-        {/* SECTION 4: DOMAINS / VERTICALS - Larger Cards */}
+        {/* SECTION 4: DOMAINS / VERTICALS - Single Row Vertical Rectangles */}
         <section className="pt-20 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
           <div className="gsap-reveal mb-12 text-center md:text-left">
             <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">02 // TECHNICAL DOMAINS</h2>
             <h3 className="text-4xl font-light">Where We <span className="font-bold">Operate</span></h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+          {/* Changed to lg:grid-cols-4 for a single row on desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 relative z-10">
             {[
               { Icon: Code2, title: "Web Architecture", desc: "Building highly scalable, distributed microservices and robust user portals." },
               { Icon: Cpu, title: "Native Mobile", desc: "Developing intuitive, high-performance iOS and Android applications." },
@@ -770,92 +820,100 @@ Keep it edgy, professional, and strictly formatted.`;
               return (
                 <div 
                   key={i} 
-                  className="gsap-reveal bg-[#0a0a0a] border border-white/10 p-10 md:p-12 rounded-3xl transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer"
+                  // Added flex flex-col and h-[420px] to enforce a vertical rectangular shape
+                  className="gsap-reveal bg-[#0a0a0a] border border-white/10 p-8 rounded-3xl transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer flex flex-col h-[420px]"
                   onMouseEnter={() => playSound('glitch')}
                 >
-                  <Icon className="w-10 h-10 text-[#00ff88] mb-6 opacity-70" strokeWidth={1.5} />
-                  <h4 className="text-2xl font-bold">{v.title}</h4>
-                  <p className="text-white/60 mt-4 leading-relaxed">{v.desc}</p>
+                  <div className="mb-auto">
+                    <Icon className="w-12 h-12 text-[#00ff88] mb-8 opacity-70" strokeWidth={1.5} />
+                    <h4 className="text-2xl font-bold mb-4 leading-tight">{v.title}</h4>
+                  </div>
+                  <p className="text-white/60 leading-relaxed mt-4">{v.desc}</p>
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* SECTION 5: WHY SHOULD YOU JOIN US - TYPING HEADER */}
-        <section className="min-h-screen flex items-center justify-center text-center pb-0 px-6 md:px-12 w-full relative z-20">
-          <h2 
-            ref={joinUsRef}
-            className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl flex flex-wrap justify-center gap-x-[0.25em]"
-          >
-            {"WHY SHOULD YOU JOIN US?".split(' ').map((word, i) => (
-              <span key={i} className="inline-block whitespace-nowrap">
-                {word.split('').map((char, j) => (
-                  <span 
-                    key={j} 
-                    className={`char inline-block ${char === '?' ? 'text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]' : 'text-white'}`}
-                  >
-                    {char}
-                  </span>
-                ))}
+        {/* UNIFIED ROADMAP WRAPPER FOR PERFECT CURVE MAPPING */}
+        <div className="relative w-full" ref={roadmapWrapperRef}>
+          
+          {/* Dynamic SVG Curve connecting "?" to the Timeline Line */}
+          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+             <path 
+                ref={timelineCurveRef} 
+                d={curveData.d} 
+                fill="none" 
+                stroke="#00ff88" 
+                strokeWidth={curveData.strokeWidth} 
+                strokeLinecap="round"
+             />
+          </svg>
+
+          {/* SECTION 5: WHY SHOULD YOU JOIN US - TYPING HEADER */}
+          <section className="min-h-screen flex items-center justify-center text-center pb-0 px-6 md:px-12 w-full relative z-20">
+            <h2 
+              ref={joinUsRef}
+              className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl flex flex-wrap justify-center gap-x-[0.25em]"
+            >
+              {"WHY SHOULD YOU JOIN US".split(' ').map((word, i) => (
+                <span key={i} className="inline-block whitespace-nowrap">
+                  {word.split('').map((char, j) => (
+                    <span key={`char-${i}-${j}`} className="char inline-block text-white opacity-0">{char}</span>
+                  ))}
+                </span>
+              ))}
+              <span className="inline-block whitespace-nowrap">
+                <span 
+                  ref={qMarkRef}
+                  className="char inline-block opacity-0 text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]"
+                >
+                  ?
+                </span>
               </span>
-            ))}
-          </h2>
-        </section>
+            </h2>
+          </section>
 
-        {/* SECTION 5.1: WHY SHOULD YOU JOIN US - DYNAMIC ROADMAP TIMELINE */}
-        <section className="pt-0 pb-10 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
-          {/* Dynamic SVG Curve connecting the Question Mark to the Timeline */}
-          <div className="absolute left-0 right-0 top-[-100px] h-[100px] pointer-events-none z-0">
-             <svg width="100%" height="100%" viewBox="0 0 1000 100" preserveAspectRatio="none">
-               <path 
-                  ref={timelineCurveRef} 
-                  d="M 650 0 C 650 50, 500 50, 500 100" 
-                  fill="none" 
-                  stroke="#00ff88" 
-                  strokeWidth="2" 
-                  vectorEffect="non-scaling-stroke"
-               />
-             </svg>
-          </div>
-
-          <div className="relative max-w-4xl mx-auto pt-10">
-             {/* Background Timeline Line */}
-             <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-white/10 md:-translate-x-1/2"></div>
-             
-             {/* Dynamic Filling Timeline Line */}
-             <div 
-               ref={timelineLineRef} 
-               className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-[#00ff88] md:-translate-x-1/2 origin-top shadow-[0_0_10px_#00ff88] z-10"
-             ></div>
-             
-             {/* Timeline Nodes */}
-             {[
-               { title: "Real-World Scale", text: "Move beyond sandbox projects. Build, deploy, and scale enterprise-grade applications that thousands of students rely on daily." },
-               { title: "Elite Mentorship", text: "Operate like a top-tier tech agency. Experience rigorous code reviews, agile workflows, and CI/CD pipelines guided by senior architects." },
-               { title: "Modern Tech Stack", text: "No legacy boilerplate. We engineer solutions using bleeding-edge tools like React, Next.js, Go, Docker, and AWS." },
-               { title: "Zero to One Ownership", text: "Don't just fix bugs. Pitch ideas, design architectures, and take complete ownership of products from ideation to deployment." },
-               { title: "Campus Impact", text: "Solve the exact problems you and your friends face. Your code will tangibly improve the daily university experience for everyone." },
-               { title: "The Alumni Network", text: "Join a tight-knit collective. Our alumni network spans top tech giants, providing unparalleled mentorship, mock interviews, and direct referrals." }
-             ].map((r, i) => (
-               <div key={i} className="relative flex items-center justify-end md:justify-between md:odd:flex-row-reverse group mb-12 roadmap-node">
-                  {/* Dynamic Connector Dot */}
-                  <div className="timeline-dot absolute left-6 md:left-1/2 w-4 h-4 rounded-full -translate-x-1/2 z-20 transition-colors duration-300"></div>
-                  
-                  {/* Content Card */}
-                  <div className="w-[calc(100%-3rem)] md:w-[45%]">
-                     <div 
-                        className="bg-[#0a0a0a] border border-white/5 p-6 md:p-8 rounded-2xl hover:border-[#00ff88]/40 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(0,255,136,0.15)]"
-                        onMouseEnter={() => playSound('glitch')}
-                     >
-                        <h4 className="text-xl md:text-2xl font-bold text-[#00ff88] mb-3" style={{ fontFamily: "'Orbitron', sans-serif" }}>{r.title}</h4>
-                        <p className="text-white/60 text-sm md:text-base leading-relaxed">{r.text}</p>
-                     </div>
-                  </div>
-               </div>
-             ))}
-          </div>
-        </section>
+          {/* SECTION 5.1: WHY SHOULD YOU JOIN US - DYNAMIC ROADMAP TIMELINE */}
+          <section className="pt-0 pb-10 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
+            <div className="relative max-w-4xl mx-auto pt-20">
+               {/* Background Timeline Line */}
+               <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] rounded-full bg-white/10 md:-translate-x-1/2"></div>
+               
+               {/* Dynamic Filling Timeline Line */}
+               <div 
+                 ref={timelineLineRef} 
+                 className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] rounded-full bg-[#00ff88] md:-translate-x-1/2 origin-top shadow-[0_0_10px_#00ff88] z-10"
+               ></div>
+               
+               {/* Timeline Nodes */}
+               {[
+                 { title: "Real-World Scale", text: "Move beyond sandbox projects. Build, deploy, and scale enterprise-grade applications that thousands of students rely on daily." },
+                 { title: "Elite Mentorship", text: "Operate like a top-tier tech agency. Experience rigorous code reviews, agile workflows, and CI/CD pipelines guided by senior architects." },
+                 { title: "Modern Tech Stack", text: "No legacy boilerplate. We engineer solutions using bleeding-edge tools like React, Next.js, Go, Docker, and AWS." },
+                 { title: "Zero to One Ownership", text: "Don't just fix bugs. Pitch ideas, design architectures, and take complete ownership of products from ideation to deployment." },
+                 { title: "Campus Impact", text: "Solve the exact problems you and your friends face. Your code will tangibly improve the daily university experience for everyone." },
+                 { title: "The Alumni Network", text: "Join a tight-knit collective. Our alumni network spans top tech giants, providing unparalleled mentorship, mock interviews, and direct referrals." }
+               ].map((r, i) => (
+                 <div key={i} className="relative flex items-center justify-end md:justify-between md:odd:flex-row-reverse group mb-12 roadmap-node">
+                    {/* Dynamic Connector Dot (Sized perfectly over the 6px line) */}
+                    <div className="timeline-dot absolute left-6 md:left-1/2 w-4 h-4 rounded-full -translate-x-1/2 z-20 transition-colors duration-300"></div>
+                    
+                    {/* Content Card */}
+                    <div className="w-[calc(100%-3rem)] md:w-[45%]">
+                       <div 
+                          className="bg-[#0a0a0a] border border-white/5 p-6 md:p-8 rounded-2xl hover:border-[#00ff88]/40 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(0,255,136,0.15)]"
+                          onMouseEnter={() => playSound('glitch')}
+                       >
+                          <h4 className="text-xl md:text-2xl font-bold text-[#00ff88] mb-3" style={{ fontFamily: "'Orbitron', sans-serif" }}>{r.title}</h4>
+                          <p className="text-white/60 text-sm md:text-base leading-relaxed">{r.text}</p>
+                       </div>
+                    </div>
+                 </div>
+               ))}
+            </div>
+          </section>
+        </div>
 
         {/* SECTION 6: THE TEAM */}
         <section id="team" className="pt-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
