@@ -72,6 +72,7 @@ export default function App() {
   const typeTextRef = useRef(null);
   const joinUsRef = useRef(null);
   const timelineRef = useRef(null);
+  const timelineCurveRef = useRef(null);
   const timelineLineRef = useRef(null);
   const audioCtxRef = useRef(null);
 
@@ -161,7 +162,7 @@ export default function App() {
     setAiError('');
     playSound('glitch');
 
-   /* const apiKey = ""; 
+    const apiKey = ""; 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
     const prompt = `You are an elite software architect for a university Student Union Tech Team. 
@@ -172,7 +173,7 @@ PROJECT_NAME: [Creative technical name]
 TECH_STACK: [List 3-4 relevant modern technologies]
 ARCHITECTURE_OVERVIEW: [2-3 sentences explaining how it works]
 
-Keep it edgy, professional, and strictly formatted.`; */
+Keep it edgy, professional, and strictly formatted.`;
 
     const fetchWithRetry = async (url, options, retries = 5) => {
       const delays = [1000, 2000, 4000, 8000, 16000];
@@ -424,7 +425,23 @@ Keep it edgy, professional, and strictly formatted.`; */
       );
     }
 
-    // Dynamic Timeline Line Growth
+    // Dynamic Timeline Curve Connection
+    if (timelineCurveRef.current) {
+      const pathLength = timelineCurveRef.current.getTotalLength();
+      gsap.set(timelineCurveRef.current, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
+      gsap.to(timelineCurveRef.current, {
+        strokeDashoffset: 0,
+        ease: "none",
+        scrollTrigger: {
+          trigger: joinUsRef.current,
+          start: "center center",
+          end: "bottom 20%",
+          scrub: true
+        }
+      });
+    }
+
+    // Dynamic Timeline Line Growth (Continues after curve)
     if (timelineRef.current && timelineLineRef.current) {
       gsap.fromTo(timelineLineRef.current,
         { scaleY: 0 },
@@ -433,7 +450,7 @@ Keep it edgy, professional, and strictly formatted.`; */
           ease: "none",
           scrollTrigger: {
             trigger: timelineRef.current,
-            start: "top 40%", // Start earlier for seamless connection
+            start: "top 40%", 
             end: "bottom 60%",
             scrub: true
           }
@@ -676,12 +693,12 @@ Keep it edgy, professional, and strictly formatted.`; */
               { 
                 title: "Campus Nav API", tags: ["Go", "Mapbox", "Redis"], 
                 desc: "Real-time routing engine handling 5k requests/min for the official university app.",
-                img: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80"
+                img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80"
               },
               { 
                 title: "SU Voting Platform", tags: ["Next.js", "Web3 Auth"], 
                 desc: "Cryptographically secure election portal replacing legacy paper systems.",
-                img: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80"
+                img: "https://images.unsplash.com/photo-1639762681485-074b7f4ec651?auto=format&fit=crop&w=800&q=80"
               },
               { 
                 title: "Event Ticketing Node", tags: ["Node.js", "PostgreSQL"], 
@@ -691,7 +708,7 @@ Keep it edgy, professional, and strictly formatted.`; */
               { 
                 title: "Room Booking UI", tags: ["React", "Tailwind"], 
                 desc: "Fluid, state-driven interface integrating with the legacy library database.",
-                img: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=800&q=80"
+                img: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
               }
             ].map((proj, i) => {
               return (
@@ -735,29 +752,30 @@ Keep it edgy, professional, and strictly formatted.`; */
           </div>
         </section>
 
-        {/* SECTION 4: DOMAINS / VERTICALS */}
+        {/* SECTION 4: DOMAINS / VERTICALS - Larger Cards */}
         <section className="pt-20 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
           <div className="gsap-reveal mb-12 text-center md:text-left">
             <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">02 // TECHNICAL DOMAINS</h2>
             <h3 className="text-4xl font-light">Where We <span className="font-bold">Operate</span></h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
             {[
-              { Icon: Code2, title: "Web Architecture" },
-              { Icon: Cpu, title: "Native Mobile" },
-              { Icon: Shield, title: "Cybersecurity" },
-              { Icon: Users, title: "UI / UX Design" }
+              { Icon: Code2, title: "Web Architecture", desc: "Building highly scalable, distributed microservices and robust user portals." },
+              { Icon: Cpu, title: "Native Mobile", desc: "Developing intuitive, high-performance iOS and Android applications." },
+              { Icon: Shield, title: "Cybersecurity", desc: "Ensuring strict data integrity, pentesting, and robust security protocols." },
+              { Icon: Users, title: "UI / UX Design", desc: "Crafting seamless, accessible, and highly engaging user experiences." }
             ].map((v, i) => {
               const Icon = v.Icon;
               return (
                 <div 
                   key={i} 
-                  className="gsap-reveal bg-[#0a0a0a] border border-white/10 p-8 rounded-2xl transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer"
+                  className="gsap-reveal bg-[#0a0a0a] border border-white/10 p-10 md:p-12 rounded-3xl transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.02] hover:border-[#00ff88]/50 shadow-[0_0_20px_rgba(5,5,5,1)] hover:shadow-[0_15px_30px_rgba(0,255,136,0.15)] transform-gpu cursor-pointer"
                   onMouseEnter={() => playSound('glitch')}
                 >
-                  <Icon className="w-8 h-8 text-[#00ff88] mb-6 opacity-70" strokeWidth={1.5} />
-                  <h4 className="text-lg font-bold">{v.title}</h4>
+                  <Icon className="w-10 h-10 text-[#00ff88] mb-6 opacity-70" strokeWidth={1.5} />
+                  <h4 className="text-2xl font-bold">{v.title}</h4>
+                  <p className="text-white/60 mt-4 leading-relaxed">{v.desc}</p>
                 </div>
               );
             })}
@@ -765,7 +783,7 @@ Keep it edgy, professional, and strictly formatted.`; */
         </section>
 
         {/* SECTION 5: WHY SHOULD YOU JOIN US - TYPING HEADER */}
-        <section className="min-h-screen flex items-center justify-center text-center pb-0 px-6 md:px-12 w-full">
+        <section className="min-h-screen flex items-center justify-center text-center pb-0 px-6 md:px-12 w-full relative z-20">
           <h2 
             ref={joinUsRef}
             className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl flex flex-wrap justify-center gap-x-[0.25em]"
@@ -775,7 +793,7 @@ Keep it edgy, professional, and strictly formatted.`; */
                 {word.split('').map((char, j) => (
                   <span 
                     key={j} 
-                    className={`char inline-block ${char === '?' ? 'text-[#E3242B] drop-shadow-[0_0_10px_rgba(227,36,43,0.8)]' : 'text-white'}`}
+                    className={`char inline-block ${char === '?' ? 'text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]' : 'text-white'}`}
                   >
                     {char}
                   </span>
@@ -786,9 +804,23 @@ Keep it edgy, professional, and strictly formatted.`; */
         </section>
 
         {/* SECTION 5.1: WHY SHOULD YOU JOIN US - DYNAMIC ROADMAP TIMELINE */}
-        <section className="pt-0 pb-32 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
-          <div className="relative max-w-4xl mx-auto pt-20">
-             {/* Seamless connection: Line starts from the top of this container which touches the typing header above */}
+        <section className="pt-0 pb-10 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
+          {/* Dynamic SVG Curve connecting the Question Mark to the Timeline */}
+          <div className="absolute left-0 right-0 top-[-100px] h-[100px] pointer-events-none z-0">
+             <svg width="100%" height="100%" viewBox="0 0 1000 100" preserveAspectRatio="none">
+               <path 
+                  ref={timelineCurveRef} 
+                  d="M 650 0 C 650 50, 500 50, 500 100" 
+                  fill="none" 
+                  stroke="#00ff88" 
+                  strokeWidth="2" 
+                  vectorEffect="non-scaling-stroke"
+               />
+             </svg>
+          </div>
+
+          <div className="relative max-w-4xl mx-auto pt-10">
+             {/* Background Timeline Line */}
              <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-white/10 md:-translate-x-1/2"></div>
              
              {/* Dynamic Filling Timeline Line */}
@@ -842,10 +874,10 @@ Keep it edgy, professional, and strictly formatted.`; */
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { role: 'Lead Developer', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80' },
-              { role: 'UI/UX Lead', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
-              { role: 'Systems Architect', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
-              { role: 'Security Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80' }
+              { name: 'Alex Chen', role: 'Lead Developer', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80' },
+              { name: 'Samantha Lee', role: 'UI/UX Lead', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
+              { name: 'Jordan Davis', role: 'Systems Architect', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
+              { name: 'Priya Sharma', role: 'Security Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80' }
             ].map((member, i) => (
               <div 
                 key={i} 
@@ -861,7 +893,7 @@ Keep it edgy, professional, and strictly formatted.`; */
                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90"></div>
                    
                    <div className="absolute bottom-6 left-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                      <div className="font-bold text-lg mb-1">Student 0{i+1}</div>
+                      <div className="font-bold text-lg mb-1">{member.name}</div>
                       <div className="text-[10px] tracking-widest text-[#00ff88]">{member.role}</div>
                    </div>
                 </div>
@@ -871,7 +903,7 @@ Keep it edgy, professional, and strictly formatted.`; */
         </section>
 
         {/* SECTION 7: REVIEWS */}
-        <section className="pt-32 pb-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
+        <section className="pt-20 pb-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
            <div className="gsap-reveal mb-12 text-center md:text-left">
             <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">04 // COMMUNITY FEEDBACK</h2>
             <h3 className="text-4xl font-light">Campus <span className="font-bold">Testimonials</span></h3>
@@ -900,7 +932,7 @@ Keep it edgy, professional, and strictly formatted.`; */
         </section>
 
         {/* SECTION 8: WHAT SHOULD WE BUILD NEXT (GEMINI API) */}
-        <section id="ai" className="pt-20 pb-20 relative z-10 px-6 md:px-12 max-w-[1000px] w-full mx-auto">
+        <section id="ai" className="pt-10 pb-10 relative z-10 px-6 md:px-12 max-w-[1000px] w-full mx-auto">
           <div className="w-full">
             <div className="gsap-reveal bg-[#0a0a0a] border border-white/5 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_rgba(0,255,136,0.03)] relative overflow-hidden">
               
@@ -961,7 +993,7 @@ Keep it edgy, professional, and strictly formatted.`; */
         </section>
 
         {/* SECTION 9: TOOLS WE USE & WHO WE WORK WITH (SCROLLING LOGOS) */}
-        <section className="pt-20 overflow-hidden relative z-10 w-full">
+        <section className="pt-10 overflow-hidden relative z-10 w-full">
           <div className="relative border-y border-white/10 py-10 bg-[#0a0a0a]/50 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.8)]">
             
             <div className="marquee-container opacity-50 mb-10">
