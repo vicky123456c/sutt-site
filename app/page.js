@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Terminal, Code2, Cpu, Shield, Users, ChevronDown, 
   Volume2, VolumeX, ArrowRight, ExternalLink, Sparkles, Loader2, Zap, Vote, BookOpen, GraduationCap, Lightbulb,
-  Mail, MessageSquare, TerminalSquare, Clock, Save, ThumbsUp, Activity, Play, Gamepad2, Trophy, CheckCircle2, XCircle
+  Mail, MessageSquare, TerminalSquare, Clock, Save, ThumbsUp, Activity, Play, Gamepad2, Trophy, CheckCircle2, XCircle, Lock, ShieldAlert
 } from 'lucide-react';
 
 // --- CUSTOM SOCIAL ICONS ---
@@ -303,7 +303,7 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [curveData, setCurveData] = useState({ curve: "", combined: "", strokeWidth: 6 });
-  const [currentPage, setCurrentPage] = useState('home'); // home, recruitment, game
+  const [currentPage, setCurrentPage] = useState('home'); // home, recruitment, game, admin
   
   // Custom Dropdown State
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
@@ -320,6 +320,7 @@ export default function App() {
   const [recruitmentName, setRecruitmentName] = useState('');
   const [q1Answer, setQ1Answer] = useState('');
   const [q2Answer, setQ2Answer] = useState('');
+  const [leaderboardData, setLeaderboardData] = useState([]);
 
   // AI Feature State
   const [campusProblem, setCampusProblem] = useState('');
@@ -330,6 +331,9 @@ export default function App() {
   // AI Additional Interactive States
   const [aiIdeaSaved, setAiIdeaSaved] = useState(false);
   const [aiIdeaVoted, setAiIdeaVoted] = useState(false);
+
+  // Admin Dashboard State
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
 
   // Demo Pipeline Ideas State
   const [demoIdeas, setDemoIdeas] = useState([
@@ -369,6 +373,27 @@ export default function App() {
     }));
     playSound('tone');
   };
+
+  // --- LOCALSTORAGE LEADERBOARD ENGINE ---
+  useEffect(() => {
+    if (currentPage === 'admin' || currentPage === 'recruitment') {
+      const fetchLeaderboard = () => {
+        const stored = localStorage.getItem('sutt_leaderboard');
+        if (stored) {
+          setLeaderboardData(JSON.parse(stored));
+        } else {
+          const initialData = [
+            { name: "Trinity", score: 100, timestamp: Date.now() - 100000 },
+            { name: "Morpheus", score: 100, timestamp: Date.now() - 500000 },
+            { name: "Cypher", score: 0, timestamp: Date.now() - 800000 }
+          ];
+          localStorage.setItem('sutt_leaderboard', JSON.stringify(initialData));
+          setLeaderboardData(initialData);
+        }
+      };
+      fetchLeaderboard();
+    }
+  }, [recruitmentStep, currentPage]);
 
   // --- AUDIO SYSTEM ---
   useEffect(() => {
@@ -492,14 +517,32 @@ export default function App() {
           window.scrollTo(0,0);
         }, 800);
       } else if (cmd === 'whoami') {
-        response = 'GUEST_USER // INSUFFICIENT CLEARANCE // ANOMALY DETECTED';
+        response = isAdminAuth ? 'ROOT_ADMIN // FULL CLEARANCE' : 'GUEST_USER // INSUFFICIENT CLEARANCE // ANOMALY DETECTED';
+      } else if (cmd.startsWith('login')) {
+        if (cmd === 'login root sutt2024') {
+          setIsAdminAuth(true);
+          response = 'ACCESS GRANTED. ROOT PRIVILEGES ACTIVE. TYPE "dashboard" TO OPEN CONTROL PANEL.';
+        } else {
+          response = 'AUTHENTICATION FAILED. INCORRECT CREDENTIALS.';
+        }
+      } else if (cmd === 'dashboard') {
+        if (isAdminAuth) {
+          response = 'REDIRECTING TO ROOT DASHBOARD...';
+          setTimeout(() => {
+            setIsTerminalOpen(false);
+            setCurrentPage('admin');
+            window.scrollTo(0,0);
+          }, 800);
+        } else {
+          response = 'PERMISSION DENIED. ROOT ACCESS REQUIRED.';
+        }
       } else if (cmd === 'clear') {
         setTerminalHistory([]);
         setTerminalInput('');
         playSound('tone');
         return;
       } else if (cmd === 'help') {
-        response = 'AVAILABLE COMMANDS: show projects, join sutt, open recruitment, whoami, clear, exit';
+        response = 'AVAILABLE COMMANDS: show projects, join sutt, open recruitment, whoami, login [user] [pass], dashboard, clear, exit';
       } else if (cmd === 'exit') {
         setIsTerminalOpen(false);
         setTerminalInput('');
@@ -516,7 +559,6 @@ export default function App() {
       playSound('tone');
     }
   };
-
 
   // --- GEMINI API INTEGRATION ---
   const generateProjectSpec = async () => {
@@ -949,6 +991,12 @@ Keep it edgy, professional, and strictly formatted.`;
     { name: 'Priya Sharma', role: 'Security Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80' }
   ];
 
+  // Testimonials array extracted for the Marquee feature
+  const testimonialsData = [
+    { quote: "The new voting portal handled 10,000 concurrent users without a single dropped connection. Incredible engineering.", author: "Elections Commissioner", Icon: Vote },
+    { quote: "Their UI/UX team completely transformed how students interact with the library booking system.", author: "Head Librarian", Icon: BookOpen },
+    { quote: "A dedicated group of developers who operate like a professional agency right here on campus.", author: "Dean of Students", Icon: GraduationCap }
+  ];
 
   if (loading) {
     return (
@@ -1109,7 +1157,7 @@ Keep it edgy, professional, and strictly formatted.`;
           className="font-bold text-lg tracking-widest flex items-center gap-4 cursor-pointer"
           onClick={() => { 
             setCurrentPage('home'); 
-            setRecruitmentStep(0); // Reset the recruitment form state
+            setRecruitmentStep(0);
             window.scrollTo(0,0); 
             playSound('tone'); 
           }}
@@ -1165,7 +1213,61 @@ Keep it edgy, professional, and strictly formatted.`;
 
       {/* --- MAIN CONTENT --- */}
       <main className="relative z-10 w-full flex flex-col gap-24 md:gap-32 pb-0">
-        {currentPage === 'game' ? (
+        {currentPage === 'admin' ? (
+           <section className="pt-32 px-6 md:px-12 w-full max-w-[1200px] mx-auto min-h-screen flex flex-col pb-16 font-mono">
+              <div className="mb-12 mt-10">
+                  <button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); playSound('tone'); }} className="text-white/50 hover:text-[#E3242B] text-sm tracking-widest flex items-center gap-2 transition-colors group">
+                     <ArrowRight className="w-4 h-4 rotate-180 transform group-hover:-translate-x-1 transition-transform" /> CLOSE SECURE DASHBOARD
+                  </button>
+              </div>
+              <div className="bg-[#0a0a0a] border border-[#E3242B]/50 rounded-3xl p-8 md:p-12 shadow-[0_0_50px_rgba(227,36,43,0.15)] relative overflow-hidden animate-[fadeIn_0.5s_ease-out]">
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[#E3242B]/50 to-transparent"></div>
+                 
+                 <div className="flex items-center gap-4 mb-2">
+                    <ShieldAlert className="w-8 h-8 text-[#E3242B] animate-pulse" />
+                    <h2 className="text-3xl md:text-5xl font-black text-[#E3242B] tracking-widest">ROOT_ACCESS</h2>
+                 </div>
+                 <p className="text-white/50 mb-10 text-sm tracking-widest pl-12 border-l border-[#E3242B]/30 ml-4">AUTHORIZED PERSONNEL ONLY // MONITORING ACTIVE SYSTEMS</p>
+
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Community Pipeline Table */}
+                    <div className="bg-[#050505] border border-white/10 rounded-xl p-6 shadow-inner">
+                       <h3 className="text-[#00ff88] font-bold mb-4 flex items-center gap-2 border-b border-white/10 pb-4"><Activity className="w-4 h-4"/> COMMUNITY SUGGESTIONS</h3>
+                       <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                          {[...demoIdeas].sort((a,b) => b.votes - a.votes).map(idea => (
+                             <div key={idea.id} className="bg-white/5 p-4 rounded-lg flex flex-col gap-2 hover:bg-white/10 transition-colors">
+                                <div className="flex justify-between items-start gap-4">
+                                   <span className="font-bold text-white text-sm">{idea.title}</span>
+                                   <span className="text-[#00ff88] font-bold text-xs bg-[#00ff88]/10 px-2 py-1 rounded whitespace-nowrap">{idea.votes} PTS</span>
+                                </div>
+                                <p className="text-white/40 text-xs leading-relaxed">{idea.desc}</p>
+                             </div>
+                          ))}
+                       </div>
+                    </div>
+                    
+                    {/* Recent Leaderboard Submissions */}
+                    <div className="bg-[#050505] border border-white/10 rounded-xl p-6 shadow-inner">
+                       <h3 className="text-[#72C4D8] font-bold mb-4 flex items-center gap-2 border-b border-white/10 pb-4"><Users className="w-4 h-4"/> RECRUITMENT LOGS</h3>
+                       <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                          {leaderboardData.length > 0 ? leaderboardData.map((entry, idx) => (
+                             <div key={idx} className="bg-white/5 p-4 rounded-lg flex justify-between items-center hover:bg-white/10 transition-colors">
+                                <div className="flex flex-col">
+                                   <span className="font-bold text-white text-sm">{entry.name}</span>
+                                   <span className="text-white/40 text-[10px]">{new Date(entry.timestamp).toLocaleString()}</span>
+                                </div>
+                                <span className={`font-mono font-bold text-xs ${entry.score > 0 ? 'text-[#00ff88]' : 'text-[#E3242B]'}`}>{entry.score} PTS</span>
+                             </div>
+                          )) : (
+                             <div className="text-center text-white/30 py-8 text-sm tracking-widest">NO LOGS DETECTED</div>
+                          )}
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </section>
+
+        ) : currentPage === 'game' ? (
            <section className="pt-32 px-6 md:px-12 w-full max-w-[1000px] mx-auto min-h-screen flex flex-col items-center pb-16">
               <div className="gsap-recruitment-reveal mb-8 w-full">
                 <button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); playSound('tone'); }} className="text-white/50 hover:text-[#00ff88] text-sm tracking-widest flex items-center gap-2 transition-colors group">
@@ -1702,32 +1804,31 @@ Keep it edgy, professional, and strictly formatted.`;
               </div>
             </section>
 
-            {/* SECTION 7: REVIEWS */}
-            <section className="pt-32 pb-10 relative z-10 px-6 md:px-12 max-w-[1600px] w-full mx-auto">
-               <div className="gsap-reveal mb-12 text-center md:text-left">
+            {/* SECTION 7: REVIEWS (Now a seamlessly scrolling Marquee!) */}
+            <section className="pt-32 pb-10 relative z-10 w-full overflow-hidden">
+               <div className="max-w-[1600px] mx-auto px-6 md:px-12 mb-12 text-center md:text-left">
                 <h2 className="text-xs text-[#00ff88] tracking-[0.3em] mb-4">04 // COMMUNITY FEEDBACK</h2>
                 <h3 className="text-4xl font-light">Campus <span className="font-bold">Testimonials</span></h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  { quote: "The new voting portal handled 10,000 concurrent users without a single dropped connection. Incredible engineering.", author: "Elections Commissioner", Icon: Vote },
-                  { quote: "Their UI/UX team completely transformed how students interact with the library booking system.", author: "Head Librarian", Icon: BookOpen },
-                  { quote: "A dedicated group of developers who operate like a professional agency right here on campus.", author: "Dean of Students", Icon: GraduationCap }
-                ].map((review, i) => {
-                  const Icon = review.Icon;
-                  return (
-                    <div key={i} className="gsap-reveal bg-[#0a0a0a] border border-white/5 p-8 rounded-2xl relative hover:border-[#00ff88]/30 transition-colors shadow-lg">
-                      <div className="text-6xl text-[#00ff88]/20 absolute top-4 left-4 font-serif">"</div>
-                      <p className="relative z-10 text-sm leading-relaxed mb-8 opacity-70 mt-4">"{review.quote}"</p>
-                      <div className="flex items-center gap-3 border-t border-white/5 pt-6">
-                        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                           <Icon className="w-4 h-4 text-[#00ff88]" />
-                        </div>
-                        <span className="font-bold text-[10px] uppercase tracking-widest text-white/80">{review.author}</span>
-                      </div>
-                    </div>
-                  )
-                })}
+              
+              <div className="marquee-container py-4">
+                 <div className="marquee-content items-center gap-6 px-3" style={{ animationDuration: '45s' }}>
+                   {[...testimonialsData, ...testimonialsData].map((review, i) => {
+                     const Icon = review.Icon;
+                     return (
+                       <div key={i} className="w-[300px] md:w-[400px] flex-shrink-0 bg-[#0a0a0a] border border-white/5 p-8 rounded-2xl relative hover:border-[#00ff88]/30 transition-colors shadow-lg whitespace-normal" onMouseEnter={() => playSound('tone')}>
+                         <div className="text-6xl text-[#00ff88]/20 absolute top-4 left-4 font-serif">"</div>
+                         <p className="relative z-10 text-sm leading-relaxed mb-8 opacity-70 mt-4">"{review.quote}"</p>
+                         <div className="flex items-center gap-3 border-t border-white/5 pt-6">
+                           <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                              <Icon className="w-4 h-4 text-[#00ff88]" />
+                           </div>
+                           <span className="font-bold text-[10px] uppercase tracking-widest text-white/80">{review.author}</span>
+                         </div>
+                       </div>
+                     )
+                   })}
+                 </div>
               </div>
             </section>
 
@@ -1805,25 +1906,28 @@ Keep it edgy, professional, and strictly formatted.`;
                     )}
                   </div>
                   
-                  {/* --- NEW DEMO SUGGESTIONS (COMMUNITY PIPELINE) --- */}
-                  <div className="mt-16 border-t border-white/10 pt-12">
+                  {/* --- NEW DEMO SUGGESTIONS (COMMUNITY PIPELINE) - Scrolling Marquee --- */}
+                  <div className="mt-16 border-t border-white/10 pt-12 overflow-hidden w-[100vw] relative left-1/2 -translate-x-1/2">
                      <h4 className="text-center text-xs tracking-[0.3em] text-[#00ff88] mb-8 font-bold flex items-center justify-center gap-2">
                         <Activity className="w-4 h-4" /> COMMUNITY PIPELINE
                      </h4>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {demoIdeas.map(idea => (
-                           <div key={idea.id} className="bg-[#050505] border border-white/5 rounded-2xl p-6 hover:border-[#00ff88]/30 transition-colors flex flex-col h-full group shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                              <h5 className="font-bold text-white mb-2 group-hover:text-[#00ff88] transition-colors">{idea.title}</h5>
-                              <p className="text-white/50 text-xs leading-relaxed mb-6 flex-1">{idea.desc}</p>
-                              <button 
-                                onClick={() => handleVote(idea.id)}
-                                className={`flex items-center justify-center gap-2 text-xs font-bold tracking-widest px-4 py-2 rounded-lg transition-all w-max ${idea.userVoted ? 'bg-[#00ff88]/20 text-[#00ff88] border border-[#00ff88]/50 shadow-[0_0_10px_rgba(0,255,136,0.2)]' : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white'}`}
-                              >
-                                <ThumbsUp className={`w-3 h-3 ${idea.userVoted ? 'fill-current' : ''}`} /> 
-                                {idea.votes}
-                              </button>
-                           </div>
-                        ))}
+                     
+                     <div className="marquee-container pb-8">
+                        <div className="marquee-content items-center gap-6 px-3" style={{ animationDuration: '35s' }}>
+                           {[...demoIdeas, ...demoIdeas].map((idea, idx) => (
+                              <div key={`${idea.id}-${idx}`} className="w-[280px] md:w-[350px] flex-shrink-0 bg-[#050505] border border-white/5 rounded-2xl p-6 hover:border-[#00ff88]/30 transition-colors flex flex-col h-full group shadow-[0_0_20px_rgba(0,0,0,0.5)] whitespace-normal" onMouseEnter={() => playSound('tone')}>
+                                 <h5 className="font-bold text-white mb-2 group-hover:text-[#00ff88] transition-colors">{idea.title}</h5>
+                                 <p className="text-white/50 text-xs leading-relaxed mb-6 flex-1">{idea.desc}</p>
+                                 <button 
+                                   onClick={() => handleVote(idea.id)}
+                                   className={`flex items-center justify-center gap-2 text-xs font-bold tracking-widest px-4 py-2 rounded-lg transition-all w-max ${idea.userVoted ? 'bg-[#00ff88]/20 text-[#00ff88] border border-[#00ff88]/50 shadow-[0_0_10px_rgba(0,255,136,0.2)]' : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white'}`}
+                                 >
+                                   <ThumbsUp className={`w-3 h-3 ${idea.userVoted ? 'fill-current' : ''}`} /> 
+                                   {idea.votes}
+                                 </button>
+                              </div>
+                           ))}
+                        </div>
                      </div>
                   </div>
 
