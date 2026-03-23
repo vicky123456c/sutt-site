@@ -60,7 +60,7 @@ export default function App() {
   const [libsLoaded, setLibsLoaded] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
-  const [curveData, setCurveData] = useState({ d: "", strokeWidth: 6 });
+  const [curveData, setCurveData] = useState({ curve: "", combined: "", strokeWidth: 6 });
   
   // AI Feature State
   const [campusProblem, setCampusProblem] = useState('');
@@ -75,8 +75,8 @@ export default function App() {
   const roadmapWrapperRef = useRef(null);
   const qMarkRef = useRef(null);
   const timelineRef = useRef(null);
-  const timelineCurveRef = useRef(null);
-  const timelineLineRef = useRef(null);
+  const timelineBgRef = useRef(null);
+  const combinedPathRef = useRef(null);
   const audioCtxRef = useRef(null);
 
   // --- AUDIO SYSTEM ---
@@ -218,18 +218,19 @@ Keep it edgy, professional, and strictly formatted.`;
 
   // --- DYNAMIC CURVE CALCULATION ---
   const updateCurve = useCallback(() => {
-    if (!roadmapWrapperRef.current || !qMarkRef.current || !timelineLineRef.current) return;
+    if (!roadmapWrapperRef.current || !qMarkRef.current || !timelineBgRef.current) return;
     
     // Get absolute screen coordinates for our anchor points
     const wrapperRect = roadmapWrapperRef.current.getBoundingClientRect();
     const qRect = qMarkRef.current.getBoundingClientRect();
-    const tRect = timelineLineRef.current.getBoundingClientRect();
+    const tBgRect = timelineBgRef.current.getBoundingClientRect();
 
     // Map screen coordinates relative to our SVG wrapper
     const startX = qRect.left + (qRect.width / 2) - wrapperRect.left;
     const startY = qRect.bottom - wrapperRect.top;
-    const endX = tRect.left + (tRect.width / 2) - wrapperRect.left;
-    const endY = tRect.top - wrapperRect.top;
+    const endX = tBgRect.left + (tBgRect.width / 2) - wrapperRect.left;
+    const endY = tBgRect.top - wrapperRect.top;
+    const bottomY = tBgRect.bottom - wrapperRect.top;
 
     // Create a smooth S-curve connecting the tail of the "?" directly to the top of the timeline
     const cp1X = startX;
@@ -237,9 +238,13 @@ Keep it edgy, professional, and strictly formatted.`;
     const cp2X = endX;
     const cp2Y = startY + (endY - startY) / 2;
 
+    const curve = `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+    const combined = `${curve} L ${endX} ${bottomY}`;
+
     setCurveData({
-      d: `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
-      strokeWidth: 6 // Match timeline line width
+      curve,
+      combined,
+      strokeWidth: 6
     });
   }, []);
 
@@ -450,7 +455,7 @@ Keep it edgy, professional, and strictly formatted.`;
     if (joinUsRef.current) {
       const chars = joinUsRef.current.querySelectorAll('.char');
       gsap.fromTo(chars, 
-        { opacity: 0.05 }, // Decreased initial opacity
+        { opacity: 0.05 },
         {
           opacity: 1,
           stagger: 0.1,
@@ -458,25 +463,8 @@ Keep it edgy, professional, and strictly formatted.`;
           scrollTrigger: {
             trigger: joinUsRef.current,
             start: "top 80%",
-            end: "center 50%", // Now finishes exactly when reaching the middle of the screen
+            end: "center 50%",
             scrub: 0.5,
-          }
-        }
-      );
-    }
-
-    // Dynamic Timeline Curve Connection
-    if (timelineCurveRef.current) {
-      gsap.fromTo(timelineLineRef.current,
-        { scaleY: 0 },
-        {
-          scaleY: 1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: timelineRef.current,
-            start: "top 40%", 
-            end: "bottom 60%",
-            scrub: true
           }
         }
       );
@@ -507,28 +495,32 @@ Keep it edgy, professional, and strictly formatted.`;
 
   // Handle SVG Curve Animation safely after coordinates map
   useEffect(() => {
-    if (loading || !libsLoaded || !window.gsap || !curveData.d || !timelineCurveRef.current) return;
+    if (loading || !libsLoaded || !window.gsap || !curveData.combined || !combinedPathRef.current) return;
     const gsap = window.gsap;
     
-    const pathLength = timelineCurveRef.current.getTotalLength();
-    gsap.set(timelineCurveRef.current, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
+    // We measure the total path to perfectly sequence the drawing phase
+    const totalLen = combinedPathRef.current.getTotalLength();
+
+    gsap.set(combinedPathRef.current, { strokeDasharray: totalLen, strokeDashoffset: totalLen });
     
-    const curveAnim = gsap.to(timelineCurveRef.current, {
+    // ONE continuous animation to draw the entire line seamlessly
+    const unifiedAnim = gsap.to(combinedPathRef.current, {
       strokeDashoffset: 0,
       ease: "none",
       scrollTrigger: {
         trigger: joinUsRef.current,
-        start: "center center",
-        end: "bottom 20%",
+        start: "center center",          // Start tracing when '?' is in the middle
+        endTrigger: timelineRef.current,
+        end: "bottom 80%",               // Finish tracing just before the end of the timeline
         scrub: true
       }
     });
 
     return () => {
-      if (curveAnim.scrollTrigger) curveAnim.scrollTrigger.kill();
-      curveAnim.kill();
+      if (unifiedAnim.scrollTrigger) unifiedAnim.scrollTrigger.kill();
+      unifiedAnim.kill();
     }
-  }, [curveData.d, libsLoaded, loading]);
+  }, [curveData.combined, libsLoaded, loading]);
 
   // --- 3D TILT HANDLERS ---
   const handleTilt = (e) => {
@@ -839,15 +831,38 @@ Keep it edgy, professional, and strictly formatted.`;
         {/* UNIFIED ROADMAP WRAPPER FOR PERFECT CURVE MAPPING */}
         <div className="relative w-full" ref={roadmapWrapperRef}>
           
-          {/* Dynamic SVG Curve connecting "?" to the Timeline Line */}
+          {/* Dynamic Single SVG connecting "?" to the bottom of the Timeline */}
           <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+             <defs>
+               <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                 <feGaussianBlur stdDeviation="8" result="blur" />
+                 <feMerge>
+                   <feMergeNode in="blur" />
+                   <feMergeNode in="SourceGraphic" />
+                 </feMerge>
+               </filter>
+             </defs>
+
+             {/* Background Curve Track */}
              <path 
-                ref={timelineCurveRef} 
-                d={curveData.d} 
+                d={curveData.combined} 
+                fill="none" 
+                stroke="rgba(255,255,255,0.1)" 
+                strokeWidth={curveData.strokeWidth} 
+                strokeLinecap="round"
+                strokeLinejoin="round"
+             />
+             
+             {/* Foreground Animated Curve - ONE single path meaning ZERO joints or overlaps! */}
+             <path 
+                ref={combinedPathRef} 
+                d={curveData.combined} 
                 fill="none" 
                 stroke="#00ff88" 
                 strokeWidth={curveData.strokeWidth} 
                 strokeLinecap="round"
+                strokeLinejoin="round"
+                filter="url(#neonGlow)"
              />
           </svg>
 
@@ -878,14 +893,8 @@ Keep it edgy, professional, and strictly formatted.`;
           {/* SECTION 5.1: WHY SHOULD YOU JOIN US - DYNAMIC ROADMAP TIMELINE */}
           <section className="pt-0 pb-10 relative z-10 px-6 md:px-12 max-w-[1200px] w-full mx-auto" ref={timelineRef}>
             <div className="relative max-w-4xl mx-auto pt-20">
-               {/* Background Timeline Line */}
-               <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] rounded-full bg-white/10 md:-translate-x-1/2"></div>
-               
-               {/* Dynamic Filling Timeline Line */}
-               <div 
-                 ref={timelineLineRef} 
-                 className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] rounded-full bg-[#00ff88] md:-translate-x-1/2 origin-top shadow-[0_0_10px_#00ff88] z-10"
-               ></div>
+               {/* Reference element replacing the old HTML background line. Used strictly for mapping coordinates safely. */}
+               <div ref={timelineBgRef} className="absolute left-6 md:left-1/2 top-0 bottom-0 w-[6px] opacity-0 pointer-events-none md:-translate-x-1/2"></div>
                
                {/* Timeline Nodes */}
                {[
