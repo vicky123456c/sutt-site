@@ -165,7 +165,7 @@ export default function App() {
     setAiError('');
     playSound('glitch');
 
-    const apiKey = ""; 
+    const apiKey = "AIzaSyCtTJGZCzc4qYPXAmcgaqnhjKnX31TKmhM"; 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
     const prompt = `You are an elite software architect for a university Student Union Tech Team. 
