@@ -786,7 +786,6 @@ Keep it edgy, professional, and strictly formatted.`;
       mouse.y = e.clientY;
       isMoving = true;
       
-      // Increased from 0.4 to 0.8 for much more prominent trails
       if (canvas.style.opacity !== '0.8') {
         canvas.style.opacity = '0.8';
       }
@@ -1084,6 +1083,39 @@ Keep it edgy, professional, and strictly formatted.`;
         ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #00ff88; }
         
+        .neon-orbit-wrapper {
+          position: relative;
+          padding: 1px;
+          border-radius: 9999px;
+          overflow: hidden;
+          display: inline-flex;
+          margin-bottom: 2.5rem;
+          box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+        }
+        
+        .neon-orbit-wrapper::before {
+          content: '';
+          position: absolute;
+          top: 50%; left: 50%; 
+          width: 1500px; height: 1500px; /* Perfect square ensures uniform rotation speed */
+          transform: translate(-50%, -50%);
+          background: conic-gradient(from 0deg, transparent 0%, transparent 60%, rgba(0, 255, 136, 0.15) 80%, rgba(0, 255, 136, 0.5) 95%, #00ff88 100%);
+          animation: orbit-uniform 3s linear infinite;
+        }
+        
+        .neon-orbit-inner {
+          position: relative;
+          background: #050505;
+          border-radius: 9999px;
+          padding: 0.8rem 2rem;
+          z-index: 10;
+        }
+        
+        @keyframes orbit-uniform {
+          0% { transform: translate(-50%, -50%) rotate(0deg); }
+          100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
         .btn-glitch { position: relative; transition: all 0.3s ease; cursor: pointer; overflow: hidden; }
         .glitch-target { position: relative; display: inline-block; }
         .btn-glitch:hover .glitch-target::before, .btn-glitch:hover .glitch-target::after {
@@ -1135,6 +1167,16 @@ Keep it edgy, professional, and strictly formatted.`;
         .marquee-container { display: flex; overflow: hidden; width: 100vw; }
         .marquee-content { display: flex; flex-shrink: 0; animation: marquee 30s linear infinite; }
         .marquee-content-reverse { display: flex; flex-shrink: 0; animation: marquee-reverse 35s linear infinite reverse; }
+        
+        .marquee-container:active .marquee-content,
+        .marquee-container:active .marquee-content-reverse,
+        .marquee-container:hover .marquee-content,
+        .marquee-container:hover .marquee-content-reverse,
+        .marquee-container:focus-within .marquee-content,
+        .marquee-container:focus-within .marquee-content-reverse {
+          animation-play-state: paused !important;
+        }
+        
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes marquee-reverse { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
@@ -1147,7 +1189,6 @@ Keep it edgy, professional, and strictly formatted.`;
           }
           .marquee-container::-webkit-scrollbar { display: none; }
           .marquee-content, .marquee-content-reverse { 
-            animation: none !important; 
             min-width: max-content; 
             padding-right: 2rem; 
           }
@@ -1346,7 +1387,7 @@ Keep it edgy, professional, and strictly formatted.`;
              <div className="gsap-recruitment-reveal mb-12 mt-10">
                 <button
                    onClick={() => { setCurrentPage('home'); setRecruitmentStep(0); window.scrollTo(0,0); playSound('tone'); }}
-                   className="text-white/50 hover:text-[#00ff88] text-sm tracking-widest flex items-center gap-2 transition-colors group"
+                   className="text-white/50 hover:text-[#E3242B] text-sm tracking-widest flex items-center gap-2 transition-colors group"
                 >
                    <ArrowRight className="w-4 h-4 rotate-180 transform group-hover:-translate-x-1 transition-transform" /> TERMINATE UPLINK (BACK)
                 </button>
@@ -1494,11 +1535,10 @@ Keep it edgy, professional, and strictly formatted.`;
                         Check your inbox for details regarding Round 1 recruitments. See you on the other side.
                       </p>
                       <button 
-                         onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); playSound('tone'); }}
-                         className="mx-auto mt-8 border border-[#00ff88]/50 text-[#00ff88] px-8 py-4 rounded-full text-xs hover:bg-[#00ff88] hover:text-black transition-all tracking-widest font-bold shadow-[0_0_15px_rgba(0,255,136,0.2)]"
-                         onMouseEnter={() => playSound('glitch')}
+                         onClick={() => { setCurrentPage('home'); setRecruitmentStep(0); window.scrollTo(0,0); playSound('tone'); }}
+                         className="mx-auto mt-8 text-white/50 hover:text-[#E3242B] text-sm tracking-widest flex items-center justify-center gap-2 transition-colors group"
                       >
-                         RETURN TO MAINFRAME
+                         <ArrowRight className="w-4 h-4 rotate-180 transform group-hover:-translate-x-1 transition-transform" /> RETURN TO MAINFRAME
                       </button>
                    </div>
                 )}
@@ -1533,22 +1573,36 @@ Keep it edgy, professional, and strictly formatted.`;
                   </div>
                 </div>
                 
-                <h1 
-                  className="text-7xl md:text-9xl lg:text-[11rem] font-black tracking-widest mb-6 text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50"
-                  style={{ 
-                    fontFamily: "'Orbitron', sans-serif",
-                    filter: 'drop-shadow(0px 25px 35px rgba(0,0,0,1)) drop-shadow(0px 0px 30px rgba(0,255,136,0.15))' 
-                  }}
-                >
-                  SUTT
-                </h1>
+                {/* --- SUTT TITLE --- */}
+                <div className="relative flex justify-center z-20 py-4 cursor-default">
+                  <h1 
+                    className="text-7xl md:text-9xl lg:text-[11rem] font-black tracking-widest text-transparent select-none"
+                    style={{ 
+                      fontFamily: "'Orbitron', sans-serif",
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='titleNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23titleNoise)' opacity='0.25'/%3E%3C/svg%3E"), linear-gradient(to bottom, #d1d1d1, rgba(209,209,209,0.85) 40%, transparent)`,
+                      WebkitBackgroundClip: 'text',
+                      backgroundClip: 'text'
+                    }}
+                  >
+                    SUTT
+                  </h1>
+                </div>
                 
-                <p className="text-lg text-white/80 max-w-xl mx-auto mb-10 font-medium">
-                  We are the technical backbone of the Student Union. Designing, developing, and deploying platforms that empower thousands.
-                </p>
+                {/* --- NEON ORBIT DESCRIPTION --- */}
+                <div className="neon-orbit-wrapper mt-6">
+                  <div className="neon-orbit-inner flex flex-col items-center justify-center gap-1 md:gap-2">
+                    <p className="text-sm md:text-base text-white font-bold tracking-[0.15em] uppercase text-center px-4">
+                      Student Union Technical Team
+                    </p>
+                    <p className="text-[10px] md:text-xs text-white/50 font-medium tracking-[0.2em] uppercase text-center px-4">
+                      Technical Backbone of Students Union - BITS Pilani
+                    </p>
+                  </div>
+                </div>
+
               </div>
 
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30 animate-bounce">
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-60 animate-bounce">
                 <span className="text-[10px] tracking-widest">SCROLL</span>
                 <ChevronDown className="w-4 h-4" />
               </div>
